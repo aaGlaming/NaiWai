@@ -10,6 +10,7 @@ const PAGE_META = {
   Tarot: { title: '奶蛙塔罗牌', description: '让奶蛙为你揭示命运的奥秘。' },
   MemeMaker: { title: '梗图制作器', description: '给奶蛙加文字，制作专属表情包。' },
   Collection: { title: '我的图鉴', description: '收藏夹、抽卡图鉴与成就徽章。' },
+  Profile: { title: '个人中心', description: '查看奶蛙收藏、图鉴、成就与云端同步状态。' },
   Quiz: { title: '奶蛙心情测试', description: '测测你今天是什么状态的奶蛙。' },
   Pet: { title: '奶蛙桌宠', description: '一只可以拖拽的佛系小奶蛙。' },
   MemoryGame: { title: '对对碰', description: '翻开两张相同的奶蛙，完成一局躺平记忆游戏。' },

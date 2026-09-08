@@ -1,61 +1,36 @@
-from fastapi import APIRouter, HTTPException
-from pathlib import Path
-from typing import List
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models import Image
 
 router = APIRouter()
 
-IMAGES_DIR = Path(__file__).parent.parent.parent.parent / "images"
 
-ANIMATION_KEYWORDS = [
-    'idle', 'waiting', 'waving', 'jumping', 'running', 'failed', 'review'
-]
-
-
-def get_image_category(filename: str) -> str:
-    lower = filename.lower()
-    for keyword in ANIMATION_KEYWORDS:
-        if keyword in lower:
-            return 'animation'
-    if lower.endswith(('.gif', '.webp')):
-        return 'emoji'
-    return 'sticker'
-
-
-def scan_images() -> List[dict]:
-    if not IMAGES_DIR.exists():
-        return []
-
-    valid_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
-    images = []
-
-    for file_path in IMAGES_DIR.iterdir():
-        if file_path.is_file() and file_path.suffix.lower() in valid_extensions:
-            images.append({
-                'filename': file_path.name,
-                'category': get_image_category(file_path.name),
-                'extension': file_path.suffix.lower()
-            })
-
-    images.sort(key=lambda x: x['filename'])
-    return images
+def serialize_image(image: Image) -> dict:
+    return {"id": image.id, "filename": image.filename, "title": image.title, "category": image.category,
+            "extension": image.extension, "rarity": image.rarity, "favorite_count": image.favorite_count,
+            "download_count": image.download_count, "url": f"/images/{image.filename}"}
 
 
 @router.get("/images")
-async def get_images():
-    images = scan_images()
-    return {
-        "images": images,
-        "total": len(images)
-    }
+def get_images(category: str | None = None, q: str | None = None, page: int = Query(1, ge=1),
+               page_size: int = Query(500, ge=1, le=500), db: Session = Depends(get_db)):
+    filters = [Image.is_active.is_(True)]
+    if category and category != "all":
+        filters.append(Image.category == category)
+    if q:
+        filters.append(Image.filename.like(f"%{q}%"))
+    total = db.scalar(select(func.count()).select_from(Image).where(*filters)) or 0
+    images = db.scalars(select(Image).where(*filters).order_by(Image.sort_order, Image.filename)
+                        .offset((page - 1) * page_size).limit(page_size)).all()
+    return {"images": [serialize_image(image) for image in images], "total": total, "page": page}
 
 
 @router.get("/images/{filename}")
-async def get_image(filename: str):
-    file_path = IMAGES_DIR / filename
-    if not file_path.exists():
+def get_image(filename: str, db: Session = Depends(get_db)):
+    image = db.scalar(select(Image).where(Image.filename == filename, Image.is_active.is_(True)))
+    if image is None:
         raise HTTPException(status_code=404, detail="图片不存在")
-    return {
-        "filename": file_path.name,
-        "category": get_image_category(file_path.name),
-        "url": f"/images/{filename}"
-    }
+    return serialize_image(image)

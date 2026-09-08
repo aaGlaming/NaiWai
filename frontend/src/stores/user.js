@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { loadJson, saveJson } from '@/utils/storage'
 import { ACHIEVEMENTS, checkAchievement } from '@/data/achievements'
+import { apiRequest } from '@/utils/api'
+import { useAuthStore } from '@/stores/auth'
 
 const STORAGE_KEY = 'naiwa_user_v1'
 
@@ -44,6 +46,8 @@ export const useUserStore = defineStore('user', () => {
   const unlocked = ref(saved.unlocked || [])
   const stats = ref({ ...DEFAULT_STATS, ...(saved.stats || {}) })
   const pendingToast = ref(null)
+  const syncing = ref(false)
+  const syncError = ref(null)
 
   function persist() {
     saveJson(STORAGE_KEY, {
@@ -73,23 +77,43 @@ export const useUserStore = defineStore('user', () => {
     pendingToast.value = null
   }
 
-  function toggleFavorite(filename) {
+  async function toggleFavorite(filename) {
     const i = favorites.value.indexOf(filename)
-    if (i >= 0) favorites.value.splice(i, 1)
-    else favorites.value.push(filename)
+    const adding = i < 0
+    if (adding) favorites.value.push(filename)
+    else favorites.value.splice(i, 1)
     persist()
     evaluateAchievements()
+    if (useAuthStore().isAuthenticated) {
+      try {
+        await apiRequest(`/api/v1/me/favorites/${encodeURIComponent(filename)}`, {
+          method: adding ? 'PUT' : 'DELETE'
+        })
+      } catch (error) {
+        if (adding) favorites.value = favorites.value.filter(item => item !== filename)
+        else favorites.value.push(filename)
+        persist()
+        syncError.value = error.message
+      }
+    }
   }
 
   function isFavorite(filename) {
     return favorites.value.includes(filename)
   }
 
-  function addToCollection(filename) {
+  async function addToCollection(filename) {
     if (!collection.value.includes(filename)) {
       collection.value.push(filename)
       persist()
       evaluateAchievements()
+    }
+    if (useAuthStore().isAuthenticated) {
+      try {
+        await apiRequest(`/api/v1/me/collection/${encodeURIComponent(filename)}`, { method: 'PUT' })
+      } catch (error) {
+        syncError.value = error.message
+      }
     }
   }
 
@@ -135,6 +159,57 @@ export const useUserStore = defineStore('user', () => {
     }
     persist()
     evaluateAchievements()
+    if (useAuthStore().isAuthenticated && event !== 'checkin') {
+      apiRequest('/api/v1/me/events', {
+        method: 'POST',
+        body: JSON.stringify({ event, count: payload.count || 1, ssr: payload.ssr || 0 })
+      }).then(result => applyRemoteData(result.data)).catch(error => { syncError.value = error.message })
+    }
+  }
+
+  function applyRemoteData(data) {
+    favorites.value = data.favorites || []
+    collection.value = data.collection || []
+    unlocked.value = data.unlocked || []
+    stats.value = { ...DEFAULT_STATS, ...(data.stats || {}) }
+    persist()
+  }
+
+  async function syncFromCloud() {
+    if (!useAuthStore().isAuthenticated) return false
+    syncing.value = true
+    syncError.value = null
+    try {
+      const data = await apiRequest('/api/v1/me/data')
+      applyRemoteData(data)
+      return true
+    } catch (error) {
+      syncError.value = error.message
+      return false
+    } finally {
+      syncing.value = false
+    }
+  }
+
+  async function importLocalData() {
+    const payload = {
+      favorites: [...favorites.value],
+      collection: [...collection.value],
+      unlocked: [...unlocked.value],
+      stats: { ...stats.value }
+    }
+    const result = await apiRequest('/api/v1/me/import-local-data', {
+      method: 'POST', body: JSON.stringify(payload)
+    })
+    applyRemoteData(result.data)
+  }
+
+  function clearLocalData() {
+    favorites.value = []
+    collection.value = []
+    unlocked.value = []
+    stats.value = { ...DEFAULT_STATS }
+    persist()
   }
 
   const achievementProgress = computed(() =>
@@ -150,6 +225,8 @@ export const useUserStore = defineStore('user', () => {
     unlocked,
     stats,
     pendingToast,
+    syncing,
+    syncError,
     achievementProgress,
     checkedInToday,
     toggleFavorite,
@@ -157,6 +234,9 @@ export const useUserStore = defineStore('user', () => {
     addToCollection,
     track,
     evaluateAchievements,
-    clearToast
+    clearToast,
+    syncFromCloud,
+    importLocalData,
+    clearLocalData
   }
 })

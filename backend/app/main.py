@@ -1,40 +1,47 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pathlib import Path
 
-from app.api import images, contact
+from app.api import auth, contact, images, users
+from app.config import get_settings
+from app.database import engine
+from app.paths import frontend_dist_dir, images_dir
 
-app = FastAPI(
-    title="奶蛙世界 API",
-    description="奶蛙介绍网站后端API",
-    version="1.0.0"
-)
-
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Include routers
+settings = get_settings()
+app = FastAPI(title="奶蛙世界 API", description="奶蛙世界网站后端 API", version="2.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=settings.allowed_origins, allow_credentials=True,
+                   allow_methods=["*"], allow_headers=["*"])
 app.include_router(images.router, prefix="/api", tags=["images"])
 app.include_router(contact.router, prefix="/api", tags=["contact"])
+app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
+app.include_router(users.router, prefix="/api/v1", tags=["users"])
 
-# Serve images from the images directory
-images_dir = Path(__file__).parent.parent.parent / "images"
-if images_dir.exists():
-    app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
+image_assets = images_dir()
+if image_assets.exists():
+    app.mount("/images", StaticFiles(directory=str(image_assets)), name="images")
 
 
 @app.get("/")
-async def root():
+def root():
+    index = frontend_dist_dir() / "index.html"
+    if index.exists():
+        return FileResponse(index)
     return {"message": "🐸 奶蛙世界 API", "docs": "/docs", "health": "/api/health"}
 
 
 @app.get("/api/health")
-async def health_check():
-    return {"status": "ok", "message": "奶蛙世界 API 运行中 🐸"}
+def health_check():
+    try:
+        with engine.connect() as connection:
+            connection.exec_driver_sql("SELECT 1")
+        database = "ok"
+    except Exception:
+        database = "unavailable"
+    return {"status": "ok", "database": database, "desktop": settings.desktop_mode,
+            "message": "奶蛙世界 API 运行中 🐸"}
+
+
+frontend_assets = frontend_dist_dir()
+if frontend_assets.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_assets), html=True), name="frontend")

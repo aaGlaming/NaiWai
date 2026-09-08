@@ -27,6 +27,8 @@ A fan-made website dedicated to the "Milk Frog" internet meme, featuring Neo-Bru
 | 状态管理 State | Pinia 4 |
 | 路由 Router | Vue Router 4 (Hash 模式，13 条路由) |
 | 后端 Backend | FastAPI (Python) |
+| 数据库 Database | MySQL 8 + SQLAlchemy 2 + Alembic |
+| 认证 Auth | HttpOnly Cookie + JWT + Argon2 |
 | PWA | Manifest + Service Worker (stale-while-revalidate) |
 | 设计系统 Design | Neo-Brutalism |
 | 字体 Font | Space Grotesk |
@@ -103,6 +105,22 @@ NAIWA/
 │   └── deploy.yml               # GitHub Pages 自动部署
 └── README.md
 ```
+
+## 🗄️ 数据库与账号 / Database & Accounts
+
+项目支持 MySQL 8 云端数据层：账号、图片元数据、收藏、抽卡图鉴、用户统计、成就和留言均可持久化；游客模式仍使用 `localStorage`，首次登录可将本机数据合并到账号。
+
+```bash
+cd backend
+copy .env.example .env        # 填写 MySQL 连接与随机 SECRET_KEY
+pip install -r requirements.txt
+python -m alembic upgrade head
+python -m scripts.seed_data   # 导入 images.json 与成就定义，可重复执行
+```
+
+应用应使用仅授权 `naiwa.*` 的专用 MySQL 用户，不要在 `.env` 中使用 root。数据库结构由 `backend/alembic/` 管理。
+
+本地开发由 Vite 代理 `/api` 到 FastAPI。前后端分开部署时，在前端构建环境设置 `VITE_API_BASE=https://你的-api-域名`，并同步配置后端 `CORS_ORIGINS` 与安全 Cookie。
 
 ## 🚀 快速开始 / Quick Start
 
@@ -282,3 +300,14 @@ Images are sourced from publicly distributed Milk Frog memes, for personal enter
 ---
 
 **Made with 🐸 by NAIWA Team**
+
+## Windows 离线安装包
+
+桌面版内置 Vue 前端、FastAPI 后端、SQLite 和全部图片资源。最终用户无需安装 Python、Node.js 或 MySQL，也无需联网。
+
+- 安装包：`desktop/release/NAIWA-Setup-1.0.0.exe`
+- 用户数据：`%LOCALAPPDATA%\NAIWA`
+- 数据备份与恢复：应用内“个人中心 → 本地数据管理”
+- 完整构建说明：`desktop/README.md`
+
+卸载应用时会保留用户数据库和备份，重新安装后可继续使用。

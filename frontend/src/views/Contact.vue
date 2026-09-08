@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import MaximalButton from '@/components/ui/MaximalButton.vue'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { loadJson, saveJson } from '@/utils/storage'
+import { apiRequest } from '@/utils/api'
 
 usePageMeta()
 
@@ -23,17 +24,14 @@ async function handleSubmit() {
   const payload = { ...form.value, time: new Date().toISOString() }
 
   try {
-    const res = await fetch('/api/contact', {
+    await apiRequest('/api/contact', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form.value)
     })
-    if (res.ok) {
-      submitted.value = true
-      form.value = { name: '', email: '', subject: '', message: '' }
-      submitting.value = false
-      return
-    }
+    submitted.value = true
+    form.value = { name: '', email: '', subject: '', message: '' }
+    submitting.value = false
+    return
   } catch (_) { /* fallback */ }
 
   const inbox = loadJson('naiwa_contact_messages', [])

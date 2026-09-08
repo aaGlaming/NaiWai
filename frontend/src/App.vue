@@ -1,16 +1,22 @@
 <script setup>
 import { RouterView, RouterLink, useRoute } from 'vue-router'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import CardReveal from '@/components/CardReveal.vue'
 import DesktopPet from '@/components/DesktopPet.vue'
 import AchievementToast from '@/components/AchievementToast.vue'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { hasSeen, markSeen } from '@/utils/storage'
+import AuthPanel from '@/components/AuthPanel.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const isMenuOpen = ref(false)
 const showCardReveal = ref(!hasSeen('naiwa_card_reveal_seen'))
 const showPet = ref(!showCardReveal.value)
+const showAuth = ref(false)
+const auth = useAuthStore()
+const userData = useUserStore()
 
 usePageMeta()
 
@@ -77,6 +83,25 @@ function onCardRevealClose() {
 }
 
 const year = computed(() => new Date().getFullYear())
+
+onMounted(async () => {
+  const account = await auth.bootstrap()
+  if (!account) return
+  if (account.local_data_imported) {
+    await userData.syncFromCloud()
+    return
+  }
+  const localCount = userData.favorites.length + userData.collection.length
+  if (!localCount || window.confirm(`检测到本机有 ${localCount} 条收藏/图鉴数据，是否合并到账号？`)) {
+    try {
+      await userData.importLocalData()
+    } catch {
+      await userData.syncFromCloud()
+    }
+  } else {
+    await userData.syncFromCloud()
+  }
+})
 </script>
 
 <template>
@@ -101,6 +126,12 @@ const year = computed(() => new Date().getFullYear())
 
         <div class="flex items-center gap-6">
           <span class="ed-meta hidden sm:inline">{{ issueDate }}</span>
+          <RouterLink v-if="auth.isAuthenticated" to="/profile" class="ed-meta ed-link">
+            {{ auth.user.nickname }}
+          </RouterLink>
+          <button v-else type="button" class="ed-meta text-ink hover:text-accent" @click="showAuth = true">
+            登录
+          </button>
           <button
             type="button"
             class="ed-meta text-ink hover:text-accent"
@@ -144,6 +175,7 @@ const year = computed(() => new Date().getFullYear())
     </Teleport>
 
     <CardReveal v-if="showCardReveal" @close="onCardRevealClose" />
+    <AuthPanel v-if="showAuth" @close="showAuth = false" />
     <AchievementToast />
     <DesktopPet v-if="showPet" />
 
