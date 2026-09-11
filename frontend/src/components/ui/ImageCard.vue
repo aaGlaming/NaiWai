@@ -83,7 +83,7 @@ function fallbackDownload(url, filename) {
         decoding="async"
       />
       <div
-        class="absolute top-2 left-2 right-2 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        class="absolute top-2 left-2 right-2 flex justify-between opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200"
       >
         <FavoriteButton :filename="image.filename" size="sm" />
         <button

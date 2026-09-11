@@ -5,22 +5,21 @@ import LegendaryEffect from '@/components/LegendaryEffect.vue'
 import DrawHistory from '@/components/DrawHistory.vue'
 import MaximalButton from '@/components/ui/MaximalButton.vue'
 import { useUserStore } from '@/stores/user'
-import { loadImagesCatalog } from '@/utils/fetchJson'
+import { useImageStore } from '@/stores/images'
 import { usePageMeta } from '@/composables/usePageMeta'
 
 usePageMeta()
 const user = useUserStore()
+const imageStore = useImageStore()
 const baseUrl = import.meta.env.BASE_URL || './'
 
-// 状态
-const allImages = ref([])
+const allImages = computed(() => imageStore.images)
 const drawnCards = ref([])
 const isDrawing = ref(false)
 const showLegendary = ref(false)
 const legendaryImage = ref(null)
-const pityCount = ref(0)
 const stats = ref({ N: 0, R: 0, SR: 0, SSR: 0 })
-const drawMode = ref('single') // 'single' or 'ten'
+const drawMode = ref('single')
 
 // 稀有度配置
 const rarityConfig = {
@@ -30,19 +29,10 @@ const rarityConfig = {
   SSR: { label: 'Cover', color: '#A94B3C', weight: 3 }
 }
 
-// 加载图片
-async function loadImages() {
-  try {
-    allImages.value = await loadImagesCatalog(baseUrl)
-  } catch (e) {
-    console.error('Failed to load images:', e)
-  }
-}
-
-// 抽取稀有度（带保底）
 function rollRarity() {
-  if (pityCount.value >= 10) {
-    pityCount.value = 0
+  let pity = user.stats.pityCount || 0
+  if (pity >= 10) {
+    user.setPity(0)
     return Math.random() < 0.2 ? 'SSR' : 'SR'
   }
 
@@ -52,35 +42,32 @@ function rollRarity() {
   for (const [rarity, config] of Object.entries(rarityConfig)) {
     random -= config.weight
     if (random <= 0) {
-      if (rarity === 'N' || rarity === 'R') {
-        pityCount.value++
-      } else {
-        pityCount.value = 0
-      }
+      if (rarity === 'N' || rarity === 'R') user.setPity(pity + 1)
+      else user.setPity(0)
       return rarity
     }
   }
 
-  pityCount.value++
+  user.setPity(pity + 1)
   return 'N'
 }
 
-// 抽取随机图片
 function getRandomImage() {
-  const index = Math.floor(Math.random() * allImages.value.length)
-  return allImages.value[index]
+  const pool = allImages.value
+  const index = Math.floor(Math.random() * pool.length)
+  return pool[index]
 }
 
-// 抽卡（单抽或十连）
-async function drawCards() {
+async function drawCards(kind = 'draw') {
   if (isDrawing.value || allImages.value.length === 0) return
+  if (kind === 'daily_draw' && !user.dailyDrawAvailable) return
 
   isDrawing.value = true
   drawnCards.value = []
 
   await new Promise(r => setTimeout(r, 100))
 
-  const count = drawMode.value === 'single' ? 1 : 10
+  const count = kind === 'daily_draw' ? 1 : (drawMode.value === 'single' ? 1 : 10)
   const cards = []
   let hasSSR = false
 
@@ -102,20 +89,22 @@ async function drawCards() {
 
   drawnCards.value = cards
 
-  // 十连抽保底：至少一张SR以上
   if (count === 10 && !cards.some(c => c.rarity === 'SR' || c.rarity === 'SSR')) {
     const randomIndex = Math.floor(Math.random() * 10)
     drawnCards.value[randomIndex].rarity = 'SR'
   }
 
-  // 如果有传说，播放特效
   if (hasSSR && legendaryImage.value) {
     setTimeout(() => {
       showLegendary.value = true
     }, 800)
   }
 
-  user.track('draw', { count, ssr: cards.filter(c => c.rarity === 'SSR').length })
+  user.track(kind, {
+    count,
+    ssr: cards.filter(c => c.rarity === 'SSR').length,
+    pity: user.stats.pityCount || 0
+  })
   isDrawing.value = false
 }
 
@@ -195,7 +184,7 @@ function saveHistory(card) {
 const hasUnrevealed = computed(() => drawnCards.value.some(c => !c.revealed))
 
 onMounted(() => {
-  loadImages()
+  imageStore.fetchImages()
   window.addEventListener('keydown', handleKeydown)
 })
 
@@ -238,12 +227,24 @@ onUnmounted(() => {
 
           <MaximalButton
             :loading="isDrawing"
-            :disabled="isDrawing"
+            :disabled="isDrawing || !allImages.length"
             class="w-full"
-            @click="drawCards"
+            @click="drawCards('draw')"
           >
             {{ isDrawing ? '抽取中…' : drawMode === 'single' ? '抽一张' : '抽十张' }}
           </MaximalButton>
+
+          <MaximalButton
+            v-if="user.dailyDrawAvailable"
+            variant="ghost"
+            class="w-full"
+            :disabled="isDrawing || !allImages.length"
+            @click="drawCards('daily_draw')"
+          >
+            领取今日赠抽
+          </MaximalButton>
+
+          <p class="ed-meta">保底进度 {{ user.stats.pityCount || 0 }} / 10</p>
 
           <MaximalButton
             v-if="hasUnrevealed"

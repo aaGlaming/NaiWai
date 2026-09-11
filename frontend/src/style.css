@@ -217,6 +217,70 @@ textarea.ed-input {
   outline-offset: 3px;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only:focus,
+.sr-only:focus-visible {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+html.theme-ink {
+  --color-paper: #181816;
+  --color-warm-white: #22211C;
+  --color-ink: #F3F0E8;
+  --color-charcoal: #D8D4C8;
+  color-scheme: dark;
+}
+
+html.theme-ink body {
+  background-color: #181816;
+  color: #F3F0E8;
+}
+
+html.theme-ink .ed-display,
+html.theme-ink .ed-link,
+html.theme-ink .ed-input,
+html.theme-ink .ed-row {
+  color: #F3F0E8;
+}
+
+html.theme-ink .ed-input {
+  border-bottom-color: rgba(243, 240, 232, 0.25);
+}
+
+html.theme-ink .ed-rule,
+html.theme-ink .ed-rule-strong {
+  border-top-color: #F3F0E8;
+}
+
+html.theme-ink .ed-img {
+  background: #22211C;
+}
+
+html.theme-ink ::-webkit-scrollbar-track {
+  background: #181816;
+}
+
+html.theme-ink ::-webkit-scrollbar-thumb {
+  background: #F3F0E8;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -56,6 +56,8 @@ def serialize_user_data(db: Session, user: User) -> dict:
             "matches": stats.matches,
             "streak": stats.streak,
             "lastCheckin": stats.last_checkin,
+            "pityCount": stats.pity_count,
+            "lastDailyDraw": stats.last_daily_draw,
         },
     }
 
@@ -73,6 +75,7 @@ def evaluate_achievements(db: Session, user: User) -> None:
         "memes": stats.memes,
         "matches": stats.matches,
         "streak": stats.streak,
+        "daily_draws": 1 if stats.last_daily_draw else 0,
     }
     unlocked = set(db.scalars(
         select(UserAchievement.achievement_id).where(UserAchievement.user_id == user.id)

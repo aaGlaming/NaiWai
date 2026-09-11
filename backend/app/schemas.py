@@ -42,6 +42,8 @@ class LocalStats(BaseModel):
     matches: int = Field(default=0, ge=0)
     streak: int = Field(default=0, ge=0)
     lastCheckin: str = ""
+    pityCount: int = Field(default=0, ge=0)
+    lastDailyDraw: str = ""
 
 
 class LocalDataImportRequest(BaseModel):
@@ -53,5 +55,6 @@ class LocalDataImportRequest(BaseModel):
 
 class UserEventRequest(BaseModel):
     event: str
-    count: int = Field(default=1, ge=1, le=100)
+    count: int = Field(default=1, ge=0, le=100)
     ssr: int = Field(default=0, ge=0, le=100)
+    pity: int = Field(default=0, ge=0, le=100)

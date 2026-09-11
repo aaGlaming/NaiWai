@@ -32,12 +32,17 @@ export const useImageStore = defineStore('images', () => {
     return result
   })
 
-  const stats = computed(() => ({
-    total: images.value.length,
-    emoji: images.value.filter(i => i.category === 'emoji').length,
-    sticker: images.value.filter(i => i.category === 'sticker').length,
-    animation: images.value.filter(i => i.category === 'animation').length
-  }))
+  const stats = computed(() => {
+    let emoji = 0
+    let sticker = 0
+    let animation = 0
+    for (const item of images.value) {
+      if (item.category === 'emoji') emoji += 1
+      else if (item.category === 'sticker') sticker += 1
+      else if (item.category === 'animation') animation += 1
+    }
+    return { total: images.value.length, emoji, sticker, animation }
+  })
 
   async function fetchImages(force = false) {
     if (loaded.value && images.value.length && !force) return

@@ -17,7 +17,9 @@ const DEFAULT_STATS = {
   downloads: 0,
   matches: 0,
   streak: 0,
-  lastCheckin: ''
+  lastCheckin: '',
+  pityCount: 0,
+  lastDailyDraw: ''
 }
 
 function todayKey() {
@@ -46,6 +48,7 @@ export const useUserStore = defineStore('user', () => {
   const unlocked = ref(saved.unlocked || [])
   const stats = ref({ ...DEFAULT_STATS, ...(saved.stats || {}) })
   const pendingToast = ref(null)
+  const pendingMerge = ref(null)
   const syncing = ref(false)
   const syncError = ref(null)
 
@@ -118,12 +121,23 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const checkedInToday = computed(() => stats.value.lastCheckin === todayKey())
+  const dailyDrawAvailable = computed(
+    () => checkedInToday.value && stats.value.lastDailyDraw !== todayKey()
+  )
+
+  function setPity(count) {
+    stats.value.pityCount = count
+    persist()
+  }
 
   function track(event, payload = {}) {
     switch (event) {
       case 'draw':
+      case 'daily_draw':
         stats.value.draws += payload.count || 1
         if (payload.ssr) stats.value.ssrCount += payload.ssr
+        if (typeof payload.pity === 'number') stats.value.pityCount = payload.pity
+        if (event === 'daily_draw') stats.value.lastDailyDraw = todayKey()
         break
       case 'wallpaper':
         stats.value.wallpapers += 1
@@ -159,10 +173,15 @@ export const useUserStore = defineStore('user', () => {
     }
     persist()
     evaluateAchievements()
-    if (useAuthStore().isAuthenticated && event !== 'checkin') {
+    if (useAuthStore().isAuthenticated) {
       apiRequest('/api/v1/me/events', {
         method: 'POST',
-        body: JSON.stringify({ event, count: payload.count || 1, ssr: payload.ssr || 0 })
+        body: JSON.stringify({
+          event,
+          count: payload.count || 1,
+          ssr: payload.ssr || 0,
+          pity: stats.value.pityCount || 0
+        })
       }).then(result => applyRemoteData(result.data)).catch(error => { syncError.value = error.message })
     }
   }
@@ -204,6 +223,14 @@ export const useUserStore = defineStore('user', () => {
     applyRemoteData(result.data)
   }
 
+  function offerMerge(count) {
+    pendingMerge.value = { count }
+  }
+
+  function clearMerge() {
+    pendingMerge.value = null
+  }
+
   function clearLocalData() {
     favorites.value = []
     collection.value = []
@@ -225,16 +252,21 @@ export const useUserStore = defineStore('user', () => {
     unlocked,
     stats,
     pendingToast,
+    pendingMerge,
     syncing,
     syncError,
     achievementProgress,
     checkedInToday,
+    dailyDrawAvailable,
     toggleFavorite,
     isFavorite,
     addToCollection,
     track,
+    setPity,
     evaluateAchievements,
     clearToast,
+    offerMerge,
+    clearMerge,
     syncFromCloud,
     importLocalData,
     clearLocalData

@@ -7,8 +7,11 @@ import AchievementToast from '@/components/AchievementToast.vue'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { hasSeen, markSeen } from '@/utils/storage'
 import AuthPanel from '@/components/AuthPanel.vue'
+import MergeDataDialog from '@/components/MergeDataDialog.vue'
+import InstallHint from '@/components/InstallHint.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
+import { useTheme } from '@/composables/useTheme'
 
 const route = useRoute()
 const isMenuOpen = ref(false)
@@ -17,6 +20,7 @@ const showPet = ref(!showCardReveal.value)
 const showAuth = ref(false)
 const auth = useAuthStore()
 const userData = useUserStore()
+const { theme, toggleTheme } = useTheme()
 
 usePageMeta()
 
@@ -84,6 +88,20 @@ function onCardRevealClose() {
 
 const year = computed(() => new Date().getFullYear())
 
+async function confirmMerge() {
+  userData.clearMerge()
+  try {
+    await userData.importLocalData()
+  } catch {
+    await userData.syncFromCloud()
+  }
+}
+
+async function skipMerge() {
+  userData.clearMerge()
+  await userData.syncFromCloud()
+}
+
 onMounted(async () => {
   const account = await auth.bootstrap()
   if (!account) return
@@ -92,20 +110,21 @@ onMounted(async () => {
     return
   }
   const localCount = userData.favorites.length + userData.collection.length
-  if (!localCount || window.confirm(`检测到本机有 ${localCount} 条收藏/图鉴数据，是否合并到账号？`)) {
+  if (!localCount) {
     try {
       await userData.importLocalData()
     } catch {
       await userData.syncFromCloud()
     }
-  } else {
-    await userData.syncFromCloud()
+    return
   }
+  userData.offerMerge(localCount)
 })
 </script>
 
 <template>
   <div class="min-h-screen bg-paper text-ink">
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[200] bg-paper px-3 py-2">跳到正文</a>
     <header class="fixed top-0 left-0 right-0 z-50 bg-paper/95 border-b border-ink/15">
       <nav class="ed-page py-4 flex items-center justify-between gap-6">
         <RouterLink to="/" class="font-display text-xl tracking-tight text-ink no-underline">
@@ -131,6 +150,9 @@ onMounted(async () => {
           </RouterLink>
           <button v-else type="button" class="ed-meta text-ink hover:text-accent" @click="showAuth = true">
             登录
+          </button>
+          <button type="button" class="ed-meta text-ink hover:text-accent" :aria-pressed="theme === 'ink'" @click="toggleTheme">
+            {{ theme === 'ink' ? '纸色' : '墨色' }}
           </button>
           <button
             type="button"
@@ -176,10 +198,17 @@ onMounted(async () => {
 
     <CardReveal v-if="showCardReveal" @close="onCardRevealClose" />
     <AuthPanel v-if="showAuth" @close="showAuth = false" />
+    <MergeDataDialog
+      v-if="userData.pendingMerge"
+      :count="userData.pendingMerge.count"
+      @confirm="confirmMerge"
+      @skip="skipMerge"
+    />
     <AchievementToast />
     <DesktopPet v-if="showPet" />
+    <InstallHint />
 
-    <main class="relative pt-20">
+    <main id="main" class="relative pt-20">
       <RouterView />
     </main>
 

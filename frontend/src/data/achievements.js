@@ -11,7 +11,8 @@ export const ACHIEVEMENTS = [
   { id: 'dex_20', title: '图鉴收集者', desc: '图鉴解锁 20 张', icon: '🐸', color: '#A94B3C' },
   { id: 'match_1', title: '对上了', desc: '完成第一局对对碰', icon: '🎴', color: '#A94B3C' },
   { id: 'checkin_1', title: '今日已躺', desc: '完成第一次签到', icon: '📅', color: '#292825' },
-  { id: 'streak_7', title: '一周佛系', desc: '连续签到 7 天', icon: '🧘', color: '#683E3D' }
+  { id: 'streak_7', title: '一周佛系', desc: '连续签到 7 天', icon: '🧘', color: '#683E3D' },
+  { id: 'daily_draw_1', title: '今日赠礼', desc: '领取第一次每日赠抽', icon: '🎁', color: '#A94B3C' }
 ]
 
 export function checkAchievement(id, state) {
@@ -33,6 +34,7 @@ export function checkAchievement(id, state) {
     case 'match_1': return (s.matches || 0) >= 1
     case 'checkin_1': return (s.streak || 0) >= 1 || !!s.lastCheckin
     case 'streak_7': return (s.streak || 0) >= 7
+    case 'daily_draw_1': return !!s.lastDailyDraw
     default: return false
   }
 }

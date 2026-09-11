@@ -21,6 +21,7 @@ ACHIEVEMENTS = [
     ("match_1", "对上了", "完成第一局对对碰", "matches", 1, "🎴"),
     ("checkin_1", "今日已躺", "完成第一次签到", "streak", 1, "📅"),
     ("streak_7", "一周佛系", "连续签到 7 天", "streak", 7, "🧘"),
+    ("daily_draw_1", "今日赠礼", "领取第一次每日赠抽", "daily_draws", 1, "🎁"),
 ]
 
 

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useImageStore } from '@/stores/images'
 import ImageCard from '@/components/ui/ImageCard.vue'
@@ -16,29 +16,26 @@ const store = useImageStore()
 const user = useUserStore()
 const baseUrl = import.meta.env.BASE_URL || './'
 const previewImage = ref(null)
-const currentPage = ref(1)
-const pageSize = ref(24)
+const visibleCount = ref(24)
 const batchLoading = ref(false)
 const shareTip = ref('')
+const loadMoreEl = ref(null)
 
-const totalPages = computed(() => Math.ceil(store.filteredImages.length / pageSize.value))
-const paginatedImages = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return store.filteredImages.slice(start, start + pageSize.value)
-})
+const visibleImages = computed(() => store.filteredImages.slice(0, visibleCount.value))
+const hasMore = computed(() => visibleCount.value < store.filteredImages.length)
+
+function handlePreview(image) { previewImage.value = image }
+function closePreview() { previewImage.value = null; shareTip.value = '' }
+function handleSearch(value) { store.setSearch(value); visibleCount.value = 24 }
+function handleCategoryChange(category) { store.setCategory(category); visibleCount.value = 24 }
+function loadMore() {
+  if (hasMore.value) visibleCount.value += 24
+}
 
 const batchLabel = computed(() => {
   const cat = store.categories.find(c => c.id === store.currentCategory)
   return cat && cat.id !== 'all' ? `奶蛙${cat.label}` : '奶蛙精选'
 })
-
-function handlePreview(image) { previewImage.value = image }
-function closePreview() { previewImage.value = null; shareTip.value = '' }
-function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++ }
-function prevPage() { if (currentPage.value > 1) currentPage.value-- }
-function goToPage(page) { currentPage.value = page; window.scrollTo({ top: 200, behavior: 'smooth' }) }
-function handleSearch(value) { store.setSearch(value); currentPage.value = 1 }
-function handleCategoryChange(category) { store.setCategory(category); currentPage.value = 1 }
 
 function downloadImage(image) {
   const link = document.createElement('a')
@@ -75,6 +72,15 @@ async function shareImage(image) {
 }
 
 onMounted(() => { store.fetchImages(true) })
+
+watch(loadMoreEl, (el, _prev, onCleanup) => {
+  if (!el || typeof IntersectionObserver === 'undefined') return
+  const observer = new IntersectionObserver((entries) => {
+    if (entries.some(entry => entry.isIntersecting)) loadMore()
+  })
+  observer.observe(el)
+  onCleanup(() => observer.disconnect())
+})
 </script>
 
 <template>
@@ -128,30 +134,19 @@ onMounted(() => { store.fetchImages(true) })
         <p class="text-accent mb-4">{{ store.error }}</p>
         <MaximalButton @click="store.fetchImages()">重试</MaximalButton>
       </div>
-      <p v-else-if="paginatedImages.length === 0" class="ed-meta py-24">没有匹配的影像</p>
+      <p v-else-if="visibleImages.length === 0" class="ed-meta py-24">没有匹配的影像</p>
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-10">
         <ImageCard
-          v-for="(image, index) in paginatedImages"
+          v-for="(image, index) in visibleImages"
           :key="image.filename"
           :image="image"
-          :index="(currentPage - 1) * pageSize + index"
+          :index="index"
           @preview="handlePreview"
         />
       </div>
 
-      <div v-if="totalPages > 1" class="mt-16 flex items-center justify-center gap-4 flex-wrap">
-        <button type="button" class="ed-link" :disabled="currentPage === 1" @click="prevPage">上一页</button>
-        <template v-for="page in totalPages" :key="page">
-          <button
-            v-if="page === 1 || page === totalPages || (page >= currentPage - 2 && page <= currentPage + 2)"
-            type="button"
-            class="ed-meta w-8"
-            :class="page === currentPage ? 'text-accent' : ''"
-            @click="goToPage(page)"
-          >{{ String(page).padStart(2, '0') }}</button>
-          <span v-else-if="page === currentPage - 3 || page === currentPage + 3" class="ed-meta">—</span>
-        </template>
-        <button type="button" class="ed-link" :disabled="currentPage === totalPages" @click="nextPage">下一页</button>
+      <div v-if="hasMore" ref="loadMoreEl" class="mt-16 flex justify-center">
+        <MaximalButton variant="ghost" @click="loadMore">继续浏览</MaximalButton>
       </div>
     </section>
 

@@ -1,24 +1,25 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import TarotCard from '@/components/TarotCard.vue'
 import MaximalButton from '@/components/ui/MaximalButton.vue'
 import tarotData from '@/data/tarot.json'
 import { useUserStore } from '@/stores/user'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { loadTarotJournal, saveTarotReading } from '@/utils/tarotJournal'
 
 usePageMeta()
 const user = useUserStore()
 const baseUrl = import.meta.env.BASE_URL || './'
 
-// 状态
 const deck = ref([])
 const drawnCards = ref([])
 const cardBack = ref('')
 const isShuffling = ref(false)
-const spreadMode = ref('single') // 'single' or 'three'
+const spreadMode = ref('single')
 const allowReversed = ref(false)
 const showResult = ref(false)
 const currentReading = ref(null)
+const journal = ref(loadTarotJournal())
 
 // 洗牌动画
 function shuffleDeck() {
@@ -64,6 +65,12 @@ function drawCards() {
 
   // 生成解读
   currentReading.value = generateReading(newDrawn)
+  journal.value = saveTarotReading({
+    at: Date.now(),
+    mode: spreadMode.value,
+    interpretation: currentReading.value.interpretation,
+    names: newDrawn.map(c => c.name)
+  })
   user.track('tarot')
 }
 
@@ -190,6 +197,16 @@ onMounted(() => {
           </Transition>
         </div>
       </div>
+
+      <aside v-if="journal.length" class="mt-20 border-t border-ink/15 pt-10">
+        <p class="ed-meta mb-6">Journal</p>
+        <ul class="space-y-6 max-w-2xl">
+          <li v-for="item in journal" :key="item.at">
+            <p class="ed-meta mb-1">{{ new Date(item.at).toLocaleString() }} · {{ item.mode === 'three' ? '三牌' : '单牌' }}</p>
+            <p class="text-charcoal">{{ item.interpretation }}</p>
+          </li>
+        </ul>
+      </aside>
     </section>
   </div>
 </template>

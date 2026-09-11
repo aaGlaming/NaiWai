@@ -44,6 +44,8 @@ onMounted(() => store.fetchImages())
             {{ user.checkedInToday ? '今日已签' : '今日签到' }}
           </button>
           <span class="ed-meta">Streak {{ user.stats.streak || 0 }}</span>
+          <RouterLink v-if="user.dailyDrawAvailable" to="/lucky" class="ed-link">领取今日赠抽</RouterLink>
+          <RouterLink v-if="user.dailyDrawAvailable" to="/lucky" class="ed-link">领取今日赠抽</RouterLink>
         </div>
       </div>
       <div v-if="dailyImage" class="md:col-span-5 md:col-start-8">

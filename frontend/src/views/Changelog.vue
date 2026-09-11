@@ -8,6 +8,16 @@ const router = useRouter()
 
 const logs = [
   {
+    vol: '05',
+    date: '11.09.2026',
+    title: 'SQLite / Daily draw / Ink',
+    items: [
+      '后端默认改为本地 SQLite（backend/data/naiwa.db），不再依赖 MySQL',
+      '新增：签到后每日赠抽、塔罗手记、墨色主题、PWA 安装提示',
+      '优化：抽卡共用图库、保底持久化、图库滚动加载、梗图全库搜索'
+    ]
+  },
+  {
     vol: '04',
     date: '04.09.2026',
     title: 'Play / Check-in / Spread',

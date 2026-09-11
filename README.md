@@ -1,13 +1,13 @@
 # 🐸 奶蛙世界 - Milk Frog World
 
-一个以 Neo-Brutalism 设计风格为特色的奶蛙介绍网站，展示 448+ 张奶蛙表情包，并提供抽卡、塔罗占卜、梗图制作、心情测试、成就系统、桌宠等丰富的互动功能，支持 PWA 离线访问。
+一个以编辑设计（纸色、墨色、朱砂）为特色的奶蛙介绍网站，展示 448+ 张奶蛙表情包，并提供抽卡、塔罗占卜、梗图制作、心情测试、成就系统、桌宠等互动功能，支持 PWA 离线访问。数据层默认使用本地 SQLite。
 
-A fan-made website dedicated to the "Milk Frog" internet meme, featuring Neo-Brutalism design, 448+ sticker images, and rich interactive features — gacha draws, tarot readings, meme maker, personality quiz, achievements, desktop pet — with PWA offline support.
+A fan-made website dedicated to the "Milk Frog" internet meme, featuring an editorial paper-and-ink design, 448+ sticker images, interactive features, PWA offline support, and a local SQLite database.
 
 ## ✨ 项目特点 / Features
 
 - 🖼️ **448+ 张奶蛙表情包** - 精心收集的奶蛙/变异奶龙表情图库，支持分类与搜索
-- 🎨 **Neo-Brutalism 设计系统** - 粗黑边框、硬阴影、奶油色背景
+- 🎨 **编辑设计系统** - 纸色底、墨色字、朱砂 accent
 - 🎮 **抽卡系统** - 四档稀有度 + 保底机制 + 十连保底
 - 🔮 **塔罗牌占卜** - 单牌/三牌牌阵，支持逆位解读
 - 🖌️ **梗图制作器** - Canvas 生成经典上下文字梗图
@@ -23,14 +23,14 @@ A fan-made website dedicated to the "Milk Frog" internet meme, featuring Neo-Bru
 
 | 层级 Layer | 技术 Technology |
 |-----------|----------------|
-| 前端 Frontend | Vue 3 + Vite 8 + Element Plus + Tailwind CSS 4 |
+| 前端 Frontend | Vue 3 + Vite 8 + Pinia + Tailwind CSS 4 |
 | 状态管理 State | Pinia 4 |
 | 路由 Router | Vue Router 4 (Hash 模式，13 条路由) |
 | 后端 Backend | FastAPI (Python) |
-| 数据库 Database | MySQL 8 + SQLAlchemy 2 + Alembic |
+| 数据库 Database | SQLite（本地文件）+ SQLAlchemy 2 + Alembic |
 | 认证 Auth | HttpOnly Cookie + JWT + Argon2 |
 | PWA | Manifest + Service Worker (stale-while-revalidate) |
-| 设计系统 Design | Neo-Brutalism |
+| 设计系统 Design | Editorial（纸 / 墨 / 朱砂） |
 | 字体 Font | Space Grotesk |
 
 ## 📁 项目结构 / Project Structure
@@ -86,7 +86,7 @@ NAIWA/
 │   │   │   └── storage.js       # localStorage 安全封装
 │   │   ├── App.vue              # 根组件（导航/CardReveal/桌宠/成就通知）
 │   │   ├── main.js              # 入口（启动即评估成就 + 注册 SW）
-│   │   └── style.css            # 全局样式（Neo-Brutalism 设计系统）
+│   │   └── style.css            # 全局样式（编辑设计系统 + 墨色主题）
 │   ├── public/
 │   │   ├── images.json          # 图片元数据（GitHub Pages 静态数据源）
 │   │   ├── manifest.webmanifest # PWA 清单
@@ -108,17 +108,21 @@ NAIWA/
 
 ## 🗄️ 数据库与账号 / Database & Accounts
 
-项目支持 MySQL 8 云端数据层：账号、图片元数据、收藏、抽卡图鉴、用户统计、成就和留言均可持久化；游客模式仍使用 `localStorage`，首次登录可将本机数据合并到账号。
+本地与桌面版统一使用 **SQLite**，默认文件为 `backend/data/naiwa.db`（已加入 `.gitignore`）。账号、图片元数据、收藏、抽卡图鉴、用户统计、成就和留言都写进这一个文件；游客模式仍使用 `localStorage`，首次登录可将本机数据合并到账号。不再需要安装或连接外部 MySQL。
 
 ```bash
 cd backend
-copy .env.example .env        # 填写 MySQL 连接与随机 SECRET_KEY
+copy .env.example .env        # 可保持默认 SQLite；请改成随机 SECRET_KEY
 pip install -r requirements.txt
 python -m alembic upgrade head
 python -m scripts.seed_data   # 导入 images.json 与成就定义，可重复执行
 ```
 
-应用应使用仅授权 `naiwa.*` 的专用 MySQL 用户，不要在 `.env` 中使用 root。数据库结构由 `backend/alembic/` 管理。
+`.env` 中的 `DATABASE_URL` 可省略（代码默认指向 `backend/data/naiwa.db`）。若填写相对路径 `sqlite:///./data/naiwa.db`，请在 `backend/` 目录下启动 uvicorn 与 alembic。桌面版仍把数据库放在 `%LOCALAPPDATA%\NAIWA\data\naiwa.db`。
+
+数据库结构由 `backend/alembic/` 管理；后续迁移在 SQLite 上使用 batch mode。
+
+GitHub Pages 仍为纯静态前端（`images.json` + localStorage）。只有本地 FastAPI 或桌面安装包会使用 SQLite。
 
 本地开发由 Vite 代理 `/api` 到 FastAPI。前后端分开部署时，在前端构建环境设置 `VITE_API_BASE=https://你的-api-域名`，并同步配置后端 `CORS_ORIGINS` 与安全 Cookie。
 
@@ -275,11 +279,11 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 ## 🛠️ 开发指南 / Development Guide
 
 - **Vue 3** Composition API + `<script setup>`，路由组件全部懒加载
-- **样式** Tailwind CSS 类名 + `style.css` 中的 Neo-Brutalism 工具类
+- **样式** Tailwind CSS 类名 + `style.css` 中的编辑设计工具类（支持墨色主题）
 - **数据** 新增图片时保持 `images/` 文件名与 `public/images.json` 一致
 - **状态** 用户相关状态统一走 `user.js` store 并通过 `track()` 埋点
 
-环境要求：Node.js ≥ 18，Python ≥ 3.8。
+环境要求：Node.js ≥ 18，Python ≥ 3.10（SQLite 为标准库，无需额外数据库服务）。
 
 ## 🖼️ 图片资源 / Image Assets
 

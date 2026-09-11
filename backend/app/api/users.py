@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -101,6 +101,9 @@ def import_local_data(payload: LocalDataImportRequest, user: User = Depends(get_
         setattr(stats, name, max(getattr(stats, name), getattr(payload.stats, name)))
     if payload.stats.lastCheckin > stats.last_checkin:
         stats.last_checkin = payload.stats.lastCheckin[:10]
+    stats.pity_count = max(stats.pity_count, payload.stats.pityCount)
+    if payload.stats.lastDailyDraw > stats.last_daily_draw:
+        stats.last_daily_draw = payload.stats.lastDailyDraw[:10]
     user.local_data_imported_at = datetime.now()
     db.flush()
     evaluate_achievements(db, user)
@@ -118,6 +121,20 @@ def track_event(payload: UserEventRequest, user: User = Depends(get_current_user
     if payload.event == "draw":
         stats.draws += payload.count
         stats.ssr_count += payload.ssr
+        stats.pity_count = payload.pity
+    elif payload.event == "checkin":
+        today = date.today().isoformat()
+        if stats.last_checkin != today:
+            yesterday = (date.today() - timedelta(days=1)).isoformat()
+            stats.streak = stats.streak + 1 if stats.last_checkin == yesterday else 1
+            stats.last_checkin = today
+    elif payload.event == "daily_draw":
+        today = date.today().isoformat()
+        if stats.last_daily_draw != today:
+            stats.last_daily_draw = today
+            stats.draws += payload.count
+            stats.ssr_count += payload.ssr
+        stats.pity_count = payload.pity
     elif payload.event in fields:
         field = fields[payload.event]
         setattr(stats, field, getattr(stats, field) + payload.count)

@@ -31,6 +31,13 @@ npm-debug.log*
 .env.local
 .env.*.local
 
+# Local SQLite
+backend/data/*.db
+backend/data/*.db-wal
+backend/data/*.db-shm
+*.db
+!backend/data/.gitkeep
+
 # Archives
 *.zip
 

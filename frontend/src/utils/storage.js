@@ -8,7 +8,11 @@ export function loadJson(key, fallback) {
 }
 
 export function saveJson(key, value) {
-  localStorage.setItem(key, JSON.stringify(value))
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    /* quota / private mode */
+  }
 }
 
 export function hasSeen(key) {
@@ -16,5 +20,9 @@ export function hasSeen(key) {
 }
 
 export function markSeen(key) {
-  localStorage.setItem(key, '1')
+  try {
+    localStorage.setItem(key, '1')
+  } catch {
+    /* ignore */
+  }
 }

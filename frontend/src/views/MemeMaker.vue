@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useImageStore } from '@/stores/images'
 import { useUserStore } from '@/stores/user'
 import { usePageMeta } from '@/composables/usePageMeta'
@@ -18,9 +18,26 @@ const fontSize = ref(48)
 const textColor = ref('#F8F6F0')
 const strokeColor = ref('#181816')
 const canvasRef = ref(null)
+const pickerQuery = ref('')
+const fileInput = ref(null)
+
+const pickerImages = computed(() => {
+  const q = pickerQuery.value.trim().toLowerCase()
+  if (!q) return store.images
+  return store.images.filter(img =>
+    img.filename.toLowerCase().includes(q) ||
+    (img.tags && img.tags.some(t => t.toLowerCase().includes(q)))
+  )
+})
 
 function selectImage(img) {
   selected.value = img
+}
+
+function onLocalFile(event) {
+  const file = event.target.files?.[0]
+  if (!file || !file.type.startsWith('image/')) return
+  selected.value = { filename: file.name, _objectUrl: URL.createObjectURL(file) }
 }
 
 async function renderMeme() {
@@ -29,7 +46,7 @@ async function renderMeme() {
   const ctx = canvas.getContext('2d')
   const img = new Image()
   img.crossOrigin = 'anonymous'
-  img.src = `${baseUrl}images/${selected.value.filename}`
+  img.src = selected.value._objectUrl || `${baseUrl}images/${selected.value.filename}`
 
   await new Promise((resolve, reject) => {
     img.onload = resolve
@@ -106,20 +123,25 @@ onMounted(() => store.fetchImages())
 
         <div class="lg:col-span-6">
           <p class="ed-meta mb-6"><span class="ed-num">02</span> Select</p>
+          <input v-model="pickerQuery" type="search" placeholder="搜索文件名…" class="ed-input mb-4" />
+          <label class="ed-meta block mb-4">
+            或上传本地图片
+            <input ref="fileInput" type="file" accept="image/*" class="mt-2 block" @change="onLocalFile" />
+          </label>
           <p v-if="store.loading" class="ed-meta">加载中…</p>
           <div v-else class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[640px] overflow-y-auto">
             <button
-              v-for="img in store.images.slice(0, 60)"
+              v-for="img in pickerImages"
               :key="img.filename"
               type="button"
               class="aspect-square bg-warm-white p-1 border transition-colors duration-200"
-              :class="selected?.filename === img.filename ? 'border-accent' : 'border-transparent hover:border-ink/30'"
+              :class="selected?.filename === img.filename && !selected?._objectUrl ? 'border-accent' : 'border-transparent hover:border-ink/30'"
               @click="selectImage(img)"
             >
               <img :src="`${baseUrl}images/${img.filename}`" :alt="img.filename" class="w-full h-full object-contain" loading="lazy" />
             </button>
           </div>
-          <p class="ed-meta mt-3">显示前 60 张</p>
+          <p class="ed-meta mt-3">{{ pickerImages.length }} 张可选</p>
         </div>
       </div>
     </section>
