@@ -1,9 +1,11 @@
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Cookie, Depends
 from sqlalchemy.orm import Session
 
+from app.core.enums import UserStatus
+from app.core.exceptions import UnauthorizedError
+from app.core.security import decode_access_token
 from app.database import get_db
 from app.models import User
-from app.security import decode_access_token
 
 
 def get_optional_user(
@@ -19,6 +21,6 @@ def get_optional_user(
 
 
 def get_current_user(user: User | None = Depends(get_optional_user)) -> User:
-    if user is None or user.status != "active":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="请先登录")
+    if user is None or user.status != UserStatus.ACTIVE.value:
+        raise UnauthorizedError("请先登录")
     return user

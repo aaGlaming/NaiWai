@@ -95,10 +95,17 @@ NAIWA/
 │   └── vite.config.js           # Vite 配置（/api、/images 代理）
 ├── backend/                     # FastAPI 后端
 │   ├── app/
-│   │   ├── main.py              # 应用入口（CORS、静态文件挂载）
-│   │   └── api/
-│   │       ├── images.py        # GET /api/images、GET /api/images/{filename}
-│   │       └── contact.py       # POST /api/contact
+│   │   ├── main.py              # create_app() 入口（CORS、lifespan、静态挂载）
+│   │   ├── core/                # 配置、JWT、Cookie、异常、日志
+│   │   ├── api/                 # 薄路由 + /api 聚合
+│   │   ├── schemas/             # 请求/响应 Pydantic 模型
+│   │   ├── services/            # 认证、用户数据、图库、留言
+│   │   ├── models/              # SQLAlchemy 实体
+│   │   ├── database.py          # 引擎工厂与 Session
+│   │   └── paths.py             # 前端 dist / 图片资源路径
+│   ├── alembic/                 # 数据库迁移
+│   ├── scripts/seed_data.py     # 导入 images.json 与成就
+│   ├── tests/
 │   └── requirements.txt
 ├── images/                      # 448+ 张奶蛙图片资源
 ├── .github/workflows/
@@ -117,6 +124,8 @@ pip install -r requirements.txt
 python -m alembic upgrade head
 python -m scripts.seed_data   # 导入 images.json 与成就定义，可重复执行
 ```
+
+生产环境必须设置长随机 `SECRET_KEY`，不要使用开发默认值。
 
 `.env` 中的 `DATABASE_URL` 可省略（代码默认指向 `backend/data/naiwa.db`）。若填写相对路径 `sqlite:///./data/naiwa.db`，请在 `backend/` 目录下启动 uvicorn 与 alembic。桌面版仍把数据库放在 `%LOCALAPPDATA%\NAIWA\data\naiwa.db`。
 

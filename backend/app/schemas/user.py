@@ -1,34 +1,4 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
-
-
-class RegisterRequest(BaseModel):
-    username: str = Field(min_length=3, max_length=32, pattern=r"^[a-zA-Z0-9_\-]+$")
-    password: str = Field(min_length=8, max_length=128)
-    nickname: str = Field(min_length=1, max_length=50)
-    email: EmailStr | None = None
-
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-
-class UserResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    username: str
-    nickname: str
-    email: str | None
-    role: str
-    local_data_imported: bool = False
-
-
-class ContactRequest(BaseModel):
-    name: str = Field(min_length=1, max_length=50)
-    email: EmailStr
-    subject: str = Field(min_length=1, max_length=150)
-    message: str = Field(min_length=1, max_length=5000)
+from pydantic import BaseModel, Field
 
 
 class LocalStats(BaseModel):
@@ -58,3 +28,20 @@ class UserEventRequest(BaseModel):
     count: int = Field(default=1, ge=0, le=100)
     ssr: int = Field(default=0, ge=0, le=100)
     pity: int = Field(default=0, ge=0, le=100)
+
+
+class UserDataOut(BaseModel):
+    favorites: list[str]
+    collection: list[str]
+    unlocked: list[str]
+    stats: LocalStats
+
+
+class FilenameSuccessOut(BaseModel):
+    success: bool = True
+    filename: str
+
+
+class UserDataMutationOut(BaseModel):
+    success: bool = True
+    data: UserDataOut

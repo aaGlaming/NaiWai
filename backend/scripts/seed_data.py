@@ -1,11 +1,11 @@
 import json
 from pathlib import Path
 
-from sqlalchemy import select
-
-from app.database import SessionLocal
+from app.database import get_session_factory
 from app.models import Achievement, Image
 from app.paths import image_manifest_path
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 ACHIEVEMENTS = [
     ("first_favorite", "初次收藏", "收藏第一张奶蛙图", "favorites", 1, "💖"),
@@ -25,24 +25,38 @@ ACHIEVEMENTS = [
 ]
 
 
-def seed_database(db, manifest: Path | None = None) -> tuple[int, int]:
+def seed_database(db: Session, manifest: Path | None = None) -> tuple[int, int]:
     catalog = json.loads((manifest or image_manifest_path()).read_text(encoding="utf-8"))["images"]
     known = set(db.scalars(select(Image.filename)).all())
     for order, item in enumerate(catalog):
         if item["filename"] not in known:
-            db.add(Image(filename=item["filename"], category=item["category"],
-                         extension=item["extension"], sort_order=order))
+            db.add(
+                Image(
+                    filename=item["filename"],
+                    category=item["category"],
+                    extension=item["extension"],
+                    sort_order=order,
+                )
+            )
     known_achievements = set(db.scalars(select(Achievement.code)).all())
     for code, name, description, condition_type, value, icon in ACHIEVEMENTS:
         if code not in known_achievements:
-            db.add(Achievement(code=code, name=name, description=description, icon=icon,
-                               condition_type=condition_type, condition_value=value))
+            db.add(
+                Achievement(
+                    code=code,
+                    name=name,
+                    description=description,
+                    icon=icon,
+                    condition_type=condition_type,
+                    condition_value=value,
+                )
+            )
     db.commit()
     return len(catalog), len(ACHIEVEMENTS)
 
 
-def main():
-    with SessionLocal() as db:
+def main() -> None:
+    with get_session_factory()() as db:
         image_count, achievement_count = seed_database(db)
         print(f"Seed complete: {image_count} images, {achievement_count} achievements")
 

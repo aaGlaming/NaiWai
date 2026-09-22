@@ -127,8 +127,8 @@ class DesktopApi:
                     raise ValueError("不是有效的奶蛙世界备份")
             if not self._window().create_confirmation_dialog("恢复数据", "恢复会覆盖当前本地数据，是否继续？"):
                 return {"success": False, "cancelled": True}
-            from app.database import engine
-            engine.dispose()
+            from app.database import get_engine
+            get_engine().dispose()
             with sqlite3.connect(source_path) as source, sqlite3.connect(self.database_path) as target:
                 source.backup(target)
             return {"success": True, "restart_required": True}
@@ -142,18 +142,18 @@ class DesktopApi:
 
 
 def initialize_database() -> None:
-    from app.database import Base, SessionLocal, engine
     from app import models  # noqa: F401
+    from app.database import Base, get_engine, get_session_factory
     from scripts.seed_data import seed_database
 
-    Base.metadata.create_all(engine)
-    with SessionLocal() as db:
+    Base.metadata.create_all(get_engine())
+    with get_session_factory()() as db:
         seed_database(db)
 
 
 def smoke_test(database_path: Path) -> None:
-    from app.database import SessionLocal
-    from app.models.entities import Achievement, Image, User
+    from app.database import get_session_factory
+    from app.models import Achievement, Image, User
     from app.paths import frontend_dist_dir, image_manifest_path
 
     if not database_path.is_file():
@@ -162,7 +162,7 @@ def smoke_test(database_path: Path) -> None:
         raise RuntimeError("Frontend build is missing")
     if not image_manifest_path().is_file():
         raise RuntimeError("Image manifest is missing")
-    with SessionLocal() as db:
+    with get_session_factory()() as db:
         if db.query(Image).count() < 1 or db.query(Achievement).count() < 1:
             raise RuntimeError("Initial desktop data was not seeded")
         db.query(User).count()
