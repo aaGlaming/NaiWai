@@ -1,3 +1,5 @@
+import { hasSeen } from '@/utils/storage'
+
 export const ACHIEVEMENTS = [
   { id: 'first_favorite', title: '初次收藏', desc: '收藏第一张奶蛙图', icon: '💖', color: '#A94B3C' },
   { id: 'collector_10', title: '收藏达人', desc: '收藏 10 张奶蛙图', icon: '📚', color: '#292825' },
@@ -12,7 +14,10 @@ export const ACHIEVEMENTS = [
   { id: 'match_1', title: '对上了', desc: '完成第一局对对碰', icon: '🎴', color: '#A94B3C' },
   { id: 'checkin_1', title: '今日已躺', desc: '完成第一次签到', icon: '📅', color: '#292825' },
   { id: 'streak_7', title: '一周佛系', desc: '连续签到 7 天', icon: '🧘', color: '#683E3D' },
-  { id: 'daily_draw_1', title: '今日赠礼', desc: '领取第一次每日赠抽', icon: '🎁', color: '#A94B3C' }
+  { id: 'daily_draw_1', title: '今日赠礼', desc: '领取第一次每日赠抽', icon: '🎁', color: '#A94B3C' },
+  { id: 'mine_1', title: '下矿了', desc: '完成第一局黄金矿工', icon: '⛏️', color: '#292825' },
+  { id: 'mine_shop', title: '矿场消费', desc: '在局间商店买过一次', icon: '🛒', color: '#8B877D' },
+  { id: 'mine_daily', title: '今日矿洞', desc: '打完一次每日矿洞', icon: '🕳️', color: '#A94B3C' }
 ]
 
 export function checkAchievement(id, state) {
@@ -35,6 +40,9 @@ export function checkAchievement(id, state) {
     case 'checkin_1': return (s.streak || 0) >= 1 || !!s.lastCheckin
     case 'streak_7': return (s.streak || 0) >= 7
     case 'daily_draw_1': return !!s.lastDailyDraw
+    case 'mine_1': return (s.mines || 0) >= 1
+    case 'mine_shop': return hasSeen('naiwa_mine_bought')
+    case 'mine_daily': return !!s.lastDailyMine
     default: return false
   }
 }

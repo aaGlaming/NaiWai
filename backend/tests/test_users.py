@@ -21,6 +21,14 @@ def test_favorites_collection_and_events(client):
     assert stats["draws"] == 2
     assert stats["ssrCount"] == 1
 
+    mine = client.post("/api/v1/me/events", json={"event": "mine"})
+    assert mine.status_code == 200
+    assert mine.json()["data"]["stats"]["mines"] == 1
+
+    daily = client.post("/api/v1/me/events", json={"event": "daily_mine"})
+    assert daily.status_code == 200
+    assert daily.json()["data"]["stats"]["lastDailyMine"]
+
     removed = client.delete("/api/v1/me/favorites/frog.png")
     assert removed.status_code == 200
     assert client.get("/api/v1/me/data").json()["favorites"] == []

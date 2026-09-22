@@ -8,6 +8,15 @@ const router = useRouter()
 
 const logs = [
   {
+    vol: '06',
+    date: '22.09.2026',
+    title: 'Mine / Shop / Daily cave',
+    items: [
+      '新增：奶蛙黄金矿工（/mine），表情包当矿石，经典钩摆与重量回拉',
+      '局间商店：大力、炸药、加时；今日矿洞固定布局与本机排行'
+    ]
+  },
+  {
     vol: '05',
     date: '11.09.2026',
     title: 'SQLite / Daily draw / Ink',

@@ -78,4 +78,23 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+def ensure_sqlite_columns() -> None:
+    eng = get_engine()
+    if eng.dialect.name != "sqlite":
+        return
+    with eng.begin() as connection:
+        tables = {
+            row[0] for row in connection.exec_driver_sql("SELECT name FROM sqlite_master WHERE type='table'").all()
+        }
+        if "user_stats" not in tables:
+            return
+        columns = {row[1] for row in connection.exec_driver_sql("PRAGMA table_info(user_stats)").all()}
+        if "mines" not in columns:
+            connection.exec_driver_sql("ALTER TABLE user_stats ADD COLUMN mines INTEGER NOT NULL DEFAULT 0")
+        if "last_daily_mine" not in columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE user_stats ADD COLUMN last_daily_mine VARCHAR(10) NOT NULL DEFAULT ''"
+            )
+
+
 init_engine()

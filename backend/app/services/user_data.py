@@ -31,6 +31,7 @@ MAX_STATS_FIELDS = (
     "matches",
     "streak",
     "pity_count",
+    "mines",
 )
 
 
@@ -48,6 +49,8 @@ def stats_to_out(stats: UserStats) -> LocalStats:
         lastCheckin=stats.last_checkin,
         pityCount=stats.pity_count,
         lastDailyDraw=stats.last_daily_draw,
+        mines=stats.mines,
+        lastDailyMine=stats.last_daily_mine,
     )
 
 
@@ -125,6 +128,7 @@ def _merge_local_stats(stats: UserStats, payload: LocalStats) -> None:
         "matches": payload.matches,
         "streak": payload.streak,
         "pity_count": payload.pityCount,
+        "mines": payload.mines,
     }
     for field in MAX_STATS_FIELDS:
         setattr(stats, field, max(getattr(stats, field), incoming[field]))
@@ -132,6 +136,8 @@ def _merge_local_stats(stats: UserStats, payload: LocalStats) -> None:
         stats.last_checkin = payload.lastCheckin[:10]
     if payload.lastDailyDraw > stats.last_daily_draw:
         stats.last_daily_draw = payload.lastDailyDraw[:10]
+    if payload.lastDailyMine > stats.last_daily_mine:
+        stats.last_daily_mine = payload.lastDailyMine[:10]
 
 
 def import_local_data(db: Session, user: User, payload: LocalDataImportRequest) -> UserDataOut:
@@ -198,6 +204,9 @@ def track_event(db: Session, user: User, payload: UserEventRequest) -> UserDataO
             stats.draws += payload.count
             stats.ssr_count += payload.ssr
         stats.pity_count = payload.pity
+    elif event is UserEvent.DAILY_MINE:
+        stats.mines += payload.count
+        stats.last_daily_mine = date.today().isoformat()
     elif event in EVENT_COUNTER_FIELDS:
         field = EVENT_COUNTER_FIELDS[event]
         setattr(stats, field, getattr(stats, field) + payload.count)

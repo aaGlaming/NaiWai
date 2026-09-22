@@ -57,6 +57,7 @@ const indexSections = [
       { path: '/tarot', label: '塔罗' },
       { path: '/quiz', label: '心情测试' },
       { path: '/play', label: '对对碰' },
+      { path: '/mine', label: '矿场' },
       { path: '/spread', label: '漫游' }
     ]
   },

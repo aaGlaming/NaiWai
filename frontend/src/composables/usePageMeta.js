@@ -14,6 +14,7 @@ const PAGE_META = {
   Quiz: { title: '奶蛙心情测试', description: '测测你今天是什么状态的奶蛙。' },
   Pet: { title: '奶蛙桌宠', description: '一只可以拖拽的佛系小奶蛙。' },
   MemoryGame: { title: '对对碰', description: '翻开两张相同的奶蛙，完成一局躺平记忆游戏。' },
+  Miner: { title: '奶蛙黄金矿工', description: '钩子摆动，把奶蛙表情当矿石挖上来。' },
   Spread: { title: '漫游', description: '一次只看一张奶蛙，用方向键翻页。' },
   Contact: { title: '联系我们', description: '有问题或建议？欢迎联系奶蛙世界。' },
   Changelog: { title: '更新日志', description: '奶蛙世界功能更新记录。' },

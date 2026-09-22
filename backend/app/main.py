@@ -11,7 +11,7 @@ from app.api import api_router
 from app.core.config import get_settings
 from app.core.exceptions import AppError, app_error_handler
 from app.core.logging import setup_logging
-from app.database import get_engine
+from app.database import ensure_sqlite_columns, get_engine
 from app.paths import frontend_dist_dir, images_dir
 
 logger = logging.getLogger(__name__)
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     logger.info("NAIWA API starting")
+    ensure_sqlite_columns()
     yield
     get_engine().dispose()
     logger.info("NAIWA API stopped")

@@ -19,6 +19,8 @@ class UserEvent(str, Enum):
     MATCH = "match"
     CHECKIN = "checkin"
     DAILY_DRAW = "daily_draw"
+    MINE = "mine"
+    DAILY_MINE = "daily_mine"
 
 
 EVENT_COUNTER_FIELDS = {
@@ -28,4 +30,5 @@ EVENT_COUNTER_FIELDS = {
     UserEvent.MEME: "memes",
     UserEvent.DOWNLOAD: "downloads",
     UserEvent.MATCH: "matches",
+    UserEvent.MINE: "mines",
 }

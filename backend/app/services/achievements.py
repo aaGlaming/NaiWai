@@ -23,6 +23,8 @@ def evaluate_achievements(db: Session, user: User) -> None:
         "matches": stats.matches,
         "streak": stats.streak,
         "daily_draws": 1 if stats.last_daily_draw else 0,
+        "mines": stats.mines,
+        "daily_mines": 1 if stats.last_daily_mine else 0,
     }
     unlocked = set(db.scalars(select(UserAchievement.achievement_id).where(UserAchievement.user_id == user.id)).all())
     for achievement in db.scalars(select(Achievement).where(Achievement.is_active.is_(True))).all():

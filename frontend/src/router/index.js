@@ -57,6 +57,11 @@ const routes = [
     component: () => import('@/views/MemoryGame.vue')
   },
   {
+    path: '/mine',
+    name: 'Miner',
+    component: () => import('@/views/Miner.vue')
+  },
+  {
     path: '/spread',
     name: 'Spread',
     component: () => import('@/views/Spread.vue')

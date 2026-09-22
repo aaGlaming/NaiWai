@@ -143,10 +143,11 @@ class DesktopApi:
 
 def initialize_database() -> None:
     from app import models  # noqa: F401
-    from app.database import Base, get_engine, get_session_factory
+    from app.database import Base, ensure_sqlite_columns, get_engine, get_session_factory
     from scripts.seed_data import seed_database
 
     Base.metadata.create_all(get_engine())
+    ensure_sqlite_columns()
     with get_session_factory()() as db:
         seed_database(db)
 

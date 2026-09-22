@@ -14,6 +14,8 @@ class LocalStats(BaseModel):
     lastCheckin: str = ""
     pityCount: int = Field(default=0, ge=0)
     lastDailyDraw: str = ""
+    mines: int = Field(default=0, ge=0)
+    lastDailyMine: str = ""
 
 
 class LocalDataImportRequest(BaseModel):

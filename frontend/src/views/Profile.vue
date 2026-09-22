@@ -14,7 +14,7 @@ const desktopMessage = ref('')
 const completion = computed(() => Math.round((data.collection.length / 447) * 100))
 const metrics = computed(() => [
   ['收藏', data.favorites.length], ['图鉴', data.collection.length], ['抽卡', data.stats.draws],
-  ['SSR', data.stats.ssrCount], ['下载', data.stats.downloads], ['成就', data.unlocked.length]
+  ['SSR', data.stats.ssrCount], ['矿场', data.stats.mines || 0], ['下载', data.stats.downloads], ['成就', data.unlocked.length]
 ])
 
 onMounted(() => {

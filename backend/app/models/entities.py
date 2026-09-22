@@ -114,6 +114,8 @@ class UserStats(Base):
     last_checkin: Mapped[str] = mapped_column(String(10), default="")
     pity_count: Mapped[int] = mapped_column(Integer, default=0)
     last_daily_draw: Mapped[str] = mapped_column(String(10), default="")
+    mines: Mapped[int] = mapped_column(Integer, default=0)
+    last_daily_mine: Mapped[str] = mapped_column(String(10), default="")
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
     user: Mapped[User] = relationship(back_populates="stats")

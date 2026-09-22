@@ -19,7 +19,9 @@ const DEFAULT_STATS = {
   streak: 0,
   lastCheckin: '',
   pityCount: 0,
-  lastDailyDraw: ''
+  lastDailyDraw: '',
+  mines: 0,
+  lastDailyMine: ''
 }
 
 function todayKey() {
@@ -61,7 +63,7 @@ export const useUserStore = defineStore('user', () => {
     })
   }
 
-  function evaluateAchievements() {
+  function evaluateAchievements(silent = false) {
     const state = {
       favorites: favorites.value,
       collection: collection.value,
@@ -70,7 +72,7 @@ export const useUserStore = defineStore('user', () => {
     for (const ach of ACHIEVEMENTS) {
       if (!unlocked.value.includes(ach.id) && checkAchievement(ach.id, state)) {
         unlocked.value.push(ach.id)
-        pendingToast.value = ach
+        if (!silent) pendingToast.value = ach
       }
     }
     persist()
@@ -157,6 +159,13 @@ export const useUserStore = defineStore('user', () => {
       case 'match':
         stats.value.matches = (stats.value.matches || 0) + 1
         break
+      case 'mine':
+        stats.value.mines = (stats.value.mines || 0) + 1
+        break
+      case 'daily_mine':
+        stats.value.mines = (stats.value.mines || 0) + 1
+        stats.value.lastDailyMine = todayKey()
+        break
       case 'checkin': {
         const today = todayKey()
         if (stats.value.lastCheckin === today) return
@@ -192,6 +201,7 @@ export const useUserStore = defineStore('user', () => {
     unlocked.value = data.unlocked || []
     stats.value = { ...DEFAULT_STATS, ...(data.stats || {}) }
     persist()
+    evaluateAchievements(true)
   }
 
   async function syncFromCloud() {
