@@ -23,6 +23,7 @@ const elapsed = ref(0)
 const started = ref(false)
 const finished = ref(false)
 const focusIndex = ref(0)
+const boardRef = ref(null)
 const reduceMotion = ref(false)
 let timer = null
 
@@ -129,25 +130,30 @@ function onWin() {
   }
 }
 
+function focusCard(index) {
+  focusIndex.value = index
+  boardRef.value?.querySelectorAll('button')[index]?.focus()
+}
+
 function onKey(e) {
-  if (!cards.value.length) return
+  if (!cards.value.length || !boardRef.value?.contains(e.target)) return
+  const buttons = [...boardRef.value.querySelectorAll('button')]
+  const current = buttons.indexOf(e.target)
+  if (current >= 0) focusIndex.value = current
   const cols = COLS
   const max = cards.value.length - 1
   if (e.key === 'ArrowRight') {
     e.preventDefault()
-    focusIndex.value = Math.min(max, focusIndex.value + 1)
+    focusCard(Math.min(max, focusIndex.value + 1))
   } else if (e.key === 'ArrowLeft') {
     e.preventDefault()
-    focusIndex.value = Math.max(0, focusIndex.value - 1)
+    focusCard(Math.max(0, focusIndex.value - 1))
   } else if (e.key === 'ArrowDown') {
     e.preventDefault()
-    focusIndex.value = Math.min(max, focusIndex.value + cols)
+    focusCard(Math.min(max, focusIndex.value + cols))
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
-    focusIndex.value = Math.max(0, focusIndex.value - cols)
-  } else if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault()
-    flipAt(focusIndex.value)
+    focusCard(Math.max(0, focusIndex.value - cols))
   }
 }
 
@@ -159,12 +165,10 @@ onMounted(async () => {
   reduceMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   await store.fetchImages()
   if (store.images.length) deal()
-  window.addEventListener('keydown', onKey)
 })
 
 onUnmounted(() => {
   stopTimer()
-  window.removeEventListener('keydown', onKey)
 })
 </script>
 
@@ -190,7 +194,7 @@ onUnmounted(() => {
     <section class="ed-page pb-24">
       <p v-if="store.loading" class="ed-meta py-16">Loading plates…</p>
       <p v-else-if="store.error" class="text-accent py-16">{{ store.error }}</p>
-      <div v-else class="grid grid-cols-4 gap-2 md:gap-4 max-w-3xl">
+      <div v-else ref="boardRef" class="grid grid-cols-4 gap-2 md:gap-4 max-w-3xl" @keydown="onKey">
         <button
           v-for="(card, index) in cards"
           :key="card.uid"
@@ -225,7 +229,7 @@ onUnmounted(() => {
       <div v-else class="mt-10">
         <MaximalButton variant="ghost" @click="deal">重洗</MaximalButton>
       </div>
-      <p class="ed-meta mt-8">方向键移动 · Enter 翻开</p>
+      <p class="ed-meta mt-8">在牌面上用方向键移动，Enter 或空格翻开</p>
     </section>
   </div>
 </template>

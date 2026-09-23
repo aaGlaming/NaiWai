@@ -46,9 +46,15 @@ function handleDownload(e) {
     class="card-container"
     :class="{ compact }"
     :style="{ '--delay': index * 0.08 + 's' }"
-    @click="handleClick"
   >
-    <div class="card-inner" :class="{ flipped: isRevealed }">
+    <button
+      v-if="!isRevealed"
+      type="button"
+      class="absolute inset-0 z-10 cursor-pointer border-0 bg-transparent p-0"
+      :aria-label="`翻开，${config.label}`"
+      @click="handleClick"
+    />
+    <div class="card-inner" :class="{ flipped: isRevealed }" :aria-hidden="!isRevealed">
       <div class="card-face card-back">
         <span class="ed-num text-2xl" :style="{ color: config.color }">{{ rarity }}</span>
         <span class="ed-meta mt-2">{{ config.label }}</span>
@@ -70,10 +76,10 @@ function handleDownload(e) {
 
 <style scoped>
 .card-container {
+  position: relative;
   perspective: 1000px;
   width: 180px;
   height: 260px;
-  cursor: pointer;
   opacity: 0;
   animation: card-appear 0.4s ease forwards;
   animation-delay: var(--delay);

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
 import MaximalButton from '@/components/ui/MaximalButton.vue'
 import DailyFrog from '@/components/DailyFrog.vue'
 
@@ -73,12 +73,11 @@ onMounted(() => {
     <section class="ed-page py-20 md:py-28">
       <p class="ed-meta mb-4"><span class="ed-num">03</span> Contents</p>
       <hr class="ed-rule mb-2" />
-      <button
+      <RouterLink
         v-for="item in contents"
         :key="item.path"
-        type="button"
-        class="ed-row"
-        @click="router.push(item.path)"
+        :to="item.path"
+        class="ed-row no-underline text-inherit"
       >
         <span class="ed-num">{{ item.n }}</span>
         <span>
@@ -86,7 +85,7 @@ onMounted(() => {
           <span class="text-sm text-warm-gray">{{ item.desc }}</span>
         </span>
         <span class="ed-meta hidden sm:inline">Read</span>
-      </button>
+      </RouterLink>
     </section>
 
     <section class="ed-page py-16">

@@ -24,6 +24,8 @@ const sizeClass = {
       user.isFavorite(filename) ? 'text-accent border-accent' : 'text-ink'
     ]"
     :title="user.isFavorite(filename) ? '取消收藏' : '收藏'"
+    :aria-label="user.isFavorite(filename) ? '取消收藏' : '收藏'"
+    :aria-pressed="user.isFavorite(filename)"
     @click.stop="user.toggleFavorite(filename)"
   >
     {{ user.isFavorite(filename) ? 'Saved' : 'Save' }}

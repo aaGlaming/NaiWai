@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
+import { useModal } from '@/composables/useModal'
 import { useRouter } from 'vue-router'
 import { useImageStore } from '@/stores/images'
 import ImageCard from '@/components/ui/ImageCard.vue'
@@ -8,7 +9,6 @@ import FavoriteButton from '@/components/FavoriteButton.vue'
 import { useUserStore } from '@/stores/user'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { shareContent } from '@/utils/share'
-import { downloadImagesAsZip } from '@/utils/batchDownload'
 
 usePageMeta()
 const router = useRouter()
@@ -16,6 +16,9 @@ const store = useImageStore()
 const user = useUserStore()
 const baseUrl = import.meta.env.BASE_URL || './'
 const previewImage = ref(null)
+const previewRef = ref(null)
+const previewOpen = computed(() => !!previewImage.value)
+useModal(previewOpen, previewRef, closePreview)
 const visibleCount = ref(24)
 const batchLoading = ref(false)
 const shareTip = ref('')
@@ -28,6 +31,11 @@ function handlePreview(image) { previewImage.value = image }
 function closePreview() { previewImage.value = null; shareTip.value = '' }
 function handleSearch(value) { store.setSearch(value); visibleCount.value = 24 }
 function handleCategoryChange(category) { store.setCategory(category); visibleCount.value = 24 }
+function clearFilters() {
+  store.setSearch('')
+  store.setCategory('all')
+  visibleCount.value = 24
+}
 function loadMore() {
   if (hasMore.value) visibleCount.value += 24
 }
@@ -52,6 +60,7 @@ async function batchDownload() {
   if (!list.length) return
   batchLoading.value = true
   try {
+    const { downloadImagesAsZip } = await import('@/utils/batchDownload')
     const count = await downloadImagesAsZip(list, baseUrl, batchLabel.value)
     user.track('download')
     shareTip.value = `已打包下载 ${count} 张图片`
@@ -103,23 +112,26 @@ watch(loadMoreEl, (el, _prev, onCleanup) => {
           @click="batchDownload"
         >打包下载</button>
       </div>
-      <p v-if="shareTip" class="ed-meta mt-3">{{ shareTip }}</p>
+      <p v-if="shareTip" class="ed-meta mt-3" role="status">{{ shareTip }}</p>
     </section>
 
     <section class="ed-page pb-8">
-      <input
-        type="search"
-        placeholder="Search filename…"
-        class="ed-input max-w-md"
-        :value="store.searchQuery"
-        @input="handleSearch($event.target.value)"
-      />
+      <label class="block max-w-md">
+        <span class="ed-meta">搜索文件名</span>
+        <input
+          type="search"
+          class="ed-input"
+          :value="store.searchQuery"
+          @input="handleSearch($event.target.value)"
+        />
+      </label>
       <div class="flex flex-wrap gap-6 mt-6">
         <button
           v-for="cat in store.categories"
           :key="cat.id"
           type="button"
           class="ed-meta pb-1 border-b transition-colors duration-200"
+          :aria-pressed="store.currentCategory === cat.id"
           :class="store.currentCategory === cat.id ? 'text-accent border-accent' : 'text-ink border-transparent hover:text-accent'"
           @click="handleCategoryChange(cat.id)"
         >
@@ -134,7 +146,10 @@ watch(loadMoreEl, (el, _prev, onCleanup) => {
         <p class="text-accent mb-4">{{ store.error }}</p>
         <MaximalButton @click="store.fetchImages()">重试</MaximalButton>
       </div>
-      <p v-else-if="visibleImages.length === 0" class="ed-meta py-24">没有匹配的影像</p>
+      <div v-else-if="visibleImages.length === 0" class="py-24">
+        <p class="ed-meta mb-4">{{ store.searchQuery || store.currentCategory !== 'all' ? '没有匹配的影像' : '图库里还没有影像' }}</p>
+        <button v-if="store.searchQuery || store.currentCategory !== 'all'" type="button" class="ed-link" @click="clearFilters">清除筛选</button>
+      </div>
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-10">
         <ImageCard
           v-for="(image, index) in visibleImages"
@@ -151,14 +166,15 @@ watch(loadMoreEl, (el, _prev, onCleanup) => {
     </section>
 
     <Teleport to="body">
-      <div v-if="previewImage" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-ink/80" @click.self="closePreview">
-        <div class="relative max-w-4xl w-full bg-paper p-6 md:p-10">
-          <button type="button" class="absolute top-4 right-4 ed-meta" @click="closePreview">Close</button>
-          <div class="flex items-center justify-center min-h-[360px] bg-warm-white mb-6">
-            <img :src="`${baseUrl}images/${previewImage.filename}`" :alt="previewImage.filename" class="max-w-full max-h-[60vh] object-contain" />
+      <div v-if="previewImage" ref="previewRef" class="fixed inset-0 z-[100] overflow-y-auto bg-ink/80" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+        <div class="flex min-h-full items-center justify-center p-4 sm:p-6" @click.self="closePreview">
+        <div class="relative max-w-4xl w-full bg-paper p-5 sm:p-6 md:p-10 my-4" @click.stop>
+          <button type="button" class="absolute top-4 right-4 ed-meta min-h-11 px-2" @click="closePreview">Close</button>
+          <div class="flex items-center justify-center bg-warm-white mb-6 min-h-[40dvh] sm:min-h-[360px]">
+            <img :src="`${baseUrl}images/${previewImage.filename}`" :alt="previewImage.filename" class="max-w-full max-h-[50dvh] sm:max-h-[60vh] object-contain" />
           </div>
-          <p class="font-display text-xl mb-4">{{ previewImage.filename }}</p>
-          <div class="flex items-center gap-4">
+          <p id="preview-title" class="font-display text-xl mb-4 break-all pr-12">{{ previewImage.filename }}</p>
+          <div class="flex flex-wrap items-center gap-4">
             <FavoriteButton :filename="previewImage.filename" size="lg" />
             <MaximalButton @click="downloadImage(previewImage)">下载</MaximalButton>
             <MaximalButton variant="ghost" @click="shareImage(previewImage)">分享</MaximalButton>
@@ -167,6 +183,7 @@ watch(loadMoreEl, (el, _prev, onCleanup) => {
               @click="router.push({ path: '/spread', query: { f: previewImage.filename } })"
             >进入漫游</MaximalButton>
           </div>
+        </div>
         </div>
       </div>
     </Teleport>

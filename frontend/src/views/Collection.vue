@@ -4,6 +4,7 @@ import { useImageStore } from '@/stores/images'
 import { useUserStore } from '@/stores/user'
 import { usePageMeta } from '@/composables/usePageMeta'
 import FavoriteButton from '@/components/FavoriteButton.vue'
+import { RouterLink } from 'vue-router'
 
 usePageMeta()
 
@@ -45,6 +46,7 @@ onMounted(() => store.fetchImages())
           :key="t.id"
           type="button"
           class="ed-meta pb-3 border-b-2 -mb-px"
+          :aria-pressed="activeTab === t.id"
           :class="activeTab === t.id ? 'text-accent border-accent' : 'text-ink border-transparent'"
           @click="activeTab = t.id"
         >
@@ -54,9 +56,14 @@ onMounted(() => store.fetchImages())
     </section>
 
     <section v-if="activeTab !== 'achievements'" class="ed-page pb-24">
-      <p v-if="displayImages.length === 0" class="ed-meta py-20">
-        {{ activeTab === 'favorites' ? '还没有收藏。去图片库点 Save。' : '还没有解锁。去抽卡。' }}
-      </p>
+      <div v-if="displayImages.length === 0" class="py-20">
+        <p class="ed-meta mb-4">
+          {{ activeTab === 'favorites' ? '还没有收藏。' : '还没有解锁。' }}
+        </p>
+        <RouterLink :to="activeTab === 'favorites' ? '/gallery' : '/lucky'" class="ed-link">
+          {{ activeTab === 'favorites' ? '去图片库' : '去抽卡' }}
+        </RouterLink>
+      </div>
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-8">
         <article v-for="img in displayImages" :key="img.filename">
           <div class="ed-img aspect-square relative mb-2">
@@ -76,9 +83,8 @@ onMounted(() => store.fetchImages())
         v-for="ach in user.achievementProgress"
         :key="ach.id"
         class="grid grid-cols-12 gap-4 py-6 border-b border-ink/10"
-        :class="ach.unlocked ? '' : 'opacity-40'"
       >
-        <span class="col-span-2 ed-num">{{ ach.unlocked ? '●' : '○' }}</span>
+        <span class="col-span-2 ed-num">{{ ach.unlocked ? '●' : '○' }}<span class="sr-only">{{ ach.unlocked ? '已解锁' : '未解锁' }}</span></span>
         <div class="col-span-10">
           <p class="font-display text-2xl">{{ ach.title }}</p>
           <p class="text-sm text-warm-gray mt-1">{{ ach.desc }}</p>

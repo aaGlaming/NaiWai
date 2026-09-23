@@ -45,7 +45,6 @@ onMounted(() => store.fetchImages())
           </button>
           <span class="ed-meta">Streak {{ user.stats.streak || 0 }}</span>
           <RouterLink v-if="user.dailyDrawAvailable" to="/lucky" class="ed-link">领取今日赠抽</RouterLink>
-          <RouterLink v-if="user.dailyDrawAvailable" to="/lucky" class="ed-link">领取今日赠抽</RouterLink>
         </div>
       </div>
       <div v-if="dailyImage" class="md:col-span-5 md:col-start-8">
@@ -65,7 +64,9 @@ onMounted(() => store.fetchImages())
           <RouterLink to="/meme" class="ed-link">制作梗图</RouterLink>
         </div>
       </div>
-      <p v-else class="ed-meta md:col-span-5">加载今日影像…</p>
+      <p v-else-if="store.loading" class="ed-meta md:col-span-5">加载今日影像…</p>
+      <p v-else-if="store.error" class="ed-meta md:col-span-5">今日影像暂时无法加载。</p>
+      <p v-else class="ed-meta md:col-span-5">今日没有影像。</p>
     </div>
   </section>
 </template>

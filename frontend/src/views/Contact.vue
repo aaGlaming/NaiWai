@@ -19,9 +19,18 @@ const submitting = ref(false)
 const error = ref(null)
 
 async function handleSubmit() {
-  submitting.value = true
   error.value = null
-  const payload = { ...form.value, time: new Date().toISOString() }
+  const name = form.value.name.trim()
+  const email = form.value.email.trim()
+  const subject = form.value.subject.trim()
+  const message = form.value.message.trim()
+  if (!name || !email || !subject || message.length < 2) {
+    error.value = '请填写姓名、邮箱和主题，正文至少写 2 个字。'
+    return
+  }
+  form.value = { name, email, subject, message }
+  submitting.value = true
+  const payload = { name, email, subject, message, time: new Date().toISOString() }
 
   try {
     await apiRequest('/api/contact', {
@@ -38,11 +47,11 @@ async function handleSubmit() {
   inbox.push(payload)
   saveJson('naiwa_contact_messages', inbox)
 
-  const subject = encodeURIComponent(`[奶蛙世界] ${form.value.subject}`)
-  const body = encodeURIComponent(
-    `姓名：${form.value.name}\n邮箱：${form.value.email}\n\n${form.value.message}`
+  const mailSubject = encodeURIComponent(`[奶蛙世界] ${subject}`)
+  const mailBody = encodeURIComponent(
+    `姓名：${name}\n邮箱：${email}\n\n${message}`
   )
-  window.location.href = `mailto:a36194113019@gmail.com?subject=${subject}&body=${body}`
+  window.location.href = `mailto:a36194113019@gmail.com?subject=${mailSubject}&body=${mailBody}`
 
   submitted.value = true
   form.value = { name: '', email: '', subject: '', message: '' }
@@ -101,22 +110,23 @@ const faqItems = [
         <MaximalButton variant="ghost" @click="submitted = false">再写一封</MaximalButton>
       </div>
       <form v-else class="space-y-8" @submit.prevent="handleSubmit">
-        <p v-if="error" class="text-accent text-sm">{{ error }}</p>
+        <p class="text-charcoal text-sm">姓名、邮箱、主题和正文都需要填写。</p>
+        <p v-if="error" class="text-accent text-sm" role="alert">{{ error }}</p>
         <label class="block">
           <span class="ed-meta">姓名</span>
-          <input v-model="form.name" type="text" required class="ed-input" placeholder="Your name" />
+          <input v-model="form.name" type="text" required autocomplete="name" class="ed-input" :aria-invalid="error ? 'true' : undefined" />
         </label>
         <label class="block">
           <span class="ed-meta">邮箱</span>
-          <input v-model="form.email" type="email" required class="ed-input" placeholder="Email" />
+          <input v-model="form.email" type="email" required autocomplete="email" class="ed-input" :aria-invalid="error ? 'true' : undefined" />
         </label>
         <label class="block">
           <span class="ed-meta">主题</span>
-          <input v-model="form.subject" type="text" required class="ed-input" placeholder="Subject" />
+          <input v-model="form.subject" type="text" required class="ed-input" :aria-invalid="error ? 'true' : undefined" />
         </label>
         <label class="block">
           <span class="ed-meta">正文</span>
-          <textarea v-model="form.message" required class="ed-input" placeholder="Message"></textarea>
+          <textarea v-model="form.message" required class="ed-input" :aria-invalid="error ? 'true' : undefined"></textarea>
         </label>
         <MaximalButton :loading="submitting" :disabled="submitting">
           {{ submitting ? '发送中…' : '投递' }}

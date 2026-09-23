@@ -23,6 +23,8 @@ const bgColorOptions = [
 
 // 图片数据
 const allImages = ref([])
+const imagesLoading = ref(true)
+const imagesError = ref('')
 const selectedImages = ref([])
 const canvasRef = ref(null)
 const isGenerating = ref(false)
@@ -40,10 +42,14 @@ const sizePresets = [
 
 // 加载图片列表
 async function loadImages() {
+  imagesLoading.value = true
+  imagesError.value = ''
   try {
     allImages.value = await loadImagesCatalog(baseUrl)
   } catch (e) {
-    console.error('Failed to load images:', e)
+    imagesError.value = e.message || '无法加载图片列表'
+  } finally {
+    imagesLoading.value = false
   }
 }
 
@@ -229,7 +235,7 @@ watch([selectedImages, wallpaperWidth, wallpaperHeight, bgColor], () => {
 
     <section class="ed-page pb-24">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        <div class="lg:col-span-4 space-y-10">
+        <div class="space-y-10 max-lg:order-2 lg:col-span-4">
           <div>
             <h3 class="ed-meta mb-4">Size</h3>
             <div class="space-y-2">
@@ -238,6 +244,7 @@ watch([selectedImages, wallpaperWidth, wallpaperHeight, bgColor], () => {
                 :key="preset.name"
                 type="button"
                 class="block w-full text-left py-2 ed-meta border-b"
+                :aria-pressed="wallpaperWidth === preset.width && wallpaperHeight === preset.height"
                 :class="wallpaperWidth === preset.width && wallpaperHeight === preset.height ? 'text-accent border-accent' : 'border-ink/10'"
                 @click="setSize(preset)"
               >{{ preset.name }}</button>
@@ -251,7 +258,8 @@ watch([selectedImages, wallpaperWidth, wallpaperHeight, bgColor], () => {
               v-for="color in bgColorOptions"
               :key="color.name"
               type="button"
-              class="flex items-center gap-3 w-full py-2"
+              class="flex items-center gap-3 w-full py-2 border-0 bg-transparent text-left cursor-pointer"
+              :aria-pressed="bgColor === color.value"
               @click="bgColor = color.value"
             >
               <span class="w-5 h-5 border border-ink/20" :style="{ background: color.value }" />
@@ -263,17 +271,24 @@ watch([selectedImages, wallpaperWidth, wallpaperHeight, bgColor], () => {
           <MaximalButton v-if="selectedImages.length > 0" variant="ghost" class="w-full" @click="downloadWallpaper">下载壁纸</MaximalButton>
         </div>
 
-        <div class="lg:col-span-8 space-y-8">
+        <div class="space-y-8 max-lg:order-1 lg:col-span-8">
           <div class="flex justify-between items-baseline">
             <p class="ed-meta">Select {{ selectedImages.length }}/12</p>
             <button v-if="selectedImages.length > 0" type="button" class="ed-meta hover:text-accent" @click="selectedImages = []">Clear</button>
           </div>
-          <div class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-[400px] overflow-y-auto">
+          <p v-if="imagesLoading" class="ed-meta py-16">Loading…</p>
+          <div v-else-if="imagesError" class="py-16">
+            <p class="text-accent mb-4">{{ imagesError }}</p>
+            <button type="button" class="ed-link" @click="loadImages">重试</button>
+          </div>
+          <p v-else-if="allImages.length === 0" class="ed-meta py-16">没有可选的图片。</p>
+          <div v-else class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-[400px] overflow-y-auto">
             <button
               v-for="image in allImages"
               :key="image.filename"
               type="button"
-              class="relative aspect-square bg-warm-white overflow-hidden border"
+              class="relative aspect-square bg-warm-white overflow-hidden border p-0 cursor-pointer"
+              :aria-pressed="isSelected(image)"
               :class="isSelected(image) ? 'border-accent' : 'border-transparent'"
               @click="toggleImage(image)"
             >

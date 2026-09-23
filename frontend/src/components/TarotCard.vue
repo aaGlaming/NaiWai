@@ -36,10 +36,13 @@ const cardBackUrl = computed(() => {
 </script>
 
 <template>
-  <div
+  <button
+    type="button"
     class="tarot-card-container"
     :class="{ 'animating': animating }"
     :style="{ '--delay': index * 0.15 + 's' }"
+    :aria-pressed="isRevealed"
+    :aria-label="isRevealed ? `${position ? `${position}，` : ''}${card?.name || '塔罗牌'}${reversed ? '，逆位' : ''}` : '翻开塔罗牌'"
     @click="handleClick"
   >
     <div
@@ -81,11 +84,17 @@ const cardBackUrl = computed(() => {
         {{ position }}
       </span>
     </div>
-  </div>
+  </button>
 </template>
 
 <style scoped>
 .tarot-card-container {
+  display: block;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   perspective: 1000px;
   width: 160px;
   height: 280px;

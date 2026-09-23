@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { formatFilename } from '@/utils'
 import FavoriteButton from '@/components/FavoriteButton.vue'
 
@@ -10,7 +10,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['preview', 'download'])
-const isHovered = ref(false)
 
 const displayName = computed(() => formatFilename(props.image.filename))
 const isAnimated = computed(() =>
@@ -68,23 +67,30 @@ function fallbackDownload(url, filename) {
 </script>
 
 <template>
-  <article
-    class="group cursor-pointer"
-    @mouseenter="isHovered = true"
-    @mouseleave="isHovered = false"
-    @click="emit('preview', image)"
-  >
+  <article class="group relative">
+    <button
+      type="button"
+      class="block w-full cursor-pointer border-0 bg-transparent p-0 text-left font-inherit text-inherit"
+      @click="emit('preview', image)"
+    >
     <div class="ed-img aspect-[3/4] mb-3 relative">
       <img
         :src="imageUrl"
-        :alt="displayName"
+        alt=""
         class="object-contain bg-warm-white"
         loading="lazy"
         decoding="async"
       />
-      <div
-        class="absolute top-2 left-2 right-2 flex justify-between opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200"
-      >
+    </div>
+    <p class="ed-meta flex items-center justify-between">
+      <span>{{ num }} / {{ categoryBadge.label }}</span>
+      <span v-if="isAnimated">Moving</span>
+    </p>
+    <h3 class="font-display text-base mt-1 truncate">{{ displayName }}</h3>
+    </button>
+    <div
+      class="absolute top-2 left-2 right-2 z-10 flex justify-between opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity duration-200"
+    >
         <FavoriteButton :filename="image.filename" size="sm" />
         <button
           type="button"
@@ -96,11 +102,5 @@ function fallbackDownload(url, filename) {
           Save
         </button>
       </div>
-    </div>
-    <p class="ed-meta flex items-center justify-between">
-      <span>{{ num }} / {{ categoryBadge.label }}</span>
-      <span v-if="isAnimated">Moving</span>
-    </p>
-    <h3 class="font-display text-base mt-1 truncate">{{ displayName }}</h3>
   </article>
 </template>

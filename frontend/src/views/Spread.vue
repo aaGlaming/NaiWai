@@ -36,6 +36,7 @@ function go(delta) {
 }
 
 function onKey(e) {
+  if (e.target.closest('a, button, input, textarea, select')) return
   if (e.key === 'ArrowLeft') {
     e.preventDefault()
     go(-1)
@@ -71,11 +72,16 @@ onUnmounted(() => {
 
     <section class="ed-page pb-8">
       <p v-if="store.loading" class="ed-meta py-24">Loading…</p>
-      <div v-else-if="current" class="bg-warm-white min-h-[50vh] md:min-h-[70vh] flex items-center justify-center">
+      <div v-else-if="store.error" class="py-24">
+        <p class="text-accent mb-4">{{ store.error }}</p>
+        <button type="button" class="ed-link" @click="store.fetchImages()">重试</button>
+      </div>
+      <p v-else-if="!current" class="ed-meta py-24">还没有可漫游的影像。</p>
+      <div v-else class="bg-warm-white min-h-[40dvh] md:min-h-[70vh] flex items-center justify-center">
         <img
           :src="`${baseUrl}images/${current.filename}`"
           :alt="current.filename"
-          class="max-w-full max-h-[78vh] object-contain"
+          class="max-w-full max-h-[58dvh] md:max-h-[78vh] object-contain"
         />
       </div>
     </section>

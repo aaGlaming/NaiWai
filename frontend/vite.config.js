@@ -44,6 +44,9 @@ export default defineConfig({
       }
     }
   },
+  test: {
+    environment: 'node'
+  },
   server: {
     port: 5173,
     proxy: {

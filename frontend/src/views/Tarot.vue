@@ -167,8 +167,8 @@ onMounted(() => {
           <p class="ed-meta">牌阵 · 洗牌 · 抽取 · 翻开</p>
         </div>
 
-        <div v-if="isShuffling" class="flex items-center justify-center h-[300px] gap-3">
-          <div v-for="i in 5" :key="i" class="w-16 h-28 bg-warm-white border border-ink/15 overflow-hidden">
+        <div v-if="isShuffling" class="flex flex-wrap items-center justify-center min-h-[180px] gap-3">
+          <div v-for="i in 5" :key="i" class="w-12 h-20 sm:w-16 sm:h-28 bg-warm-white border border-ink/15 overflow-hidden">
             <img v-if="cardBack" :src="`${baseUrl}images/${cardBack}`" class="w-full h-full object-cover" alt="" />
           </div>
         </div>

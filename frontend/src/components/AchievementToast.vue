@@ -14,12 +14,18 @@ watch(() => user.pendingToast, (val) => {
     <Transition name="toast">
       <div
         v-if="user.pendingToast"
-        class="fixed top-20 right-6 z-[200] max-w-sm bg-paper border border-ink/20 p-5 cursor-pointer"
-        @click="user.clearToast()"
+        class="fixed top-20 right-6 z-[200] max-w-sm"
+        role="status"
       >
-        <p class="ed-meta text-accent mb-1">Achievement</p>
-        <p class="font-display text-2xl leading-tight">{{ user.pendingToast.title }}</p>
-        <p class="text-sm text-warm-gray mt-2">{{ user.pendingToast.desc }}</p>
+        <button
+          type="button"
+          class="w-full bg-paper border border-ink/20 p-5 text-left cursor-pointer font-inherit text-inherit"
+          @click="user.clearToast()"
+        >
+          <span class="ed-meta text-accent mb-1 block">Achievement</span>
+          <span class="font-display text-2xl leading-tight block">{{ user.pendingToast.title }}</span>
+          <span class="text-sm text-warm-gray mt-2 block">{{ user.pendingToast.desc }}</span>
+        </button>
       </div>
     </Transition>
   </Teleport>

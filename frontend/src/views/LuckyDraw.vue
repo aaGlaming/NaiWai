@@ -133,6 +133,7 @@ function revealAll() {
 
 // Enter键处理
 function handleKeydown(e) {
+  if (e.target.closest('a, button, input, textarea, select')) return
   if (e.key === 'Enter' && drawnCards.value.length > 0 && !isDrawing.value) {
     const hasUnrevealed = drawnCards.value.some(c => !c.revealed)
     if (hasUnrevealed) {
@@ -215,12 +216,14 @@ onUnmounted(() => {
               type="button"
               class="ed-meta pb-3 border-b-2 -mb-px"
               :class="drawMode === 'single' ? 'text-accent border-accent' : 'border-transparent'"
+              :aria-pressed="drawMode === 'single'"
               @click="drawMode = 'single'"
             >单抽</button>
             <button
               type="button"
               class="ed-meta pb-3 border-b-2 -mb-px"
               :class="drawMode === 'ten' ? 'text-accent border-accent' : 'border-transparent'"
+              :aria-pressed="drawMode === 'ten'"
               @click="drawMode = 'ten'"
             >十连</button>
           </div>
@@ -280,7 +283,12 @@ onUnmounted(() => {
         </div>
 
         <div class="lg:col-span-8 min-h-[400px] border-t border-ink/15 pt-8 flex items-center justify-center">
-          <div v-if="drawnCards.length === 0" class="text-center">
+          <div v-if="imageStore.loading" class="ed-meta">Loading…</div>
+          <div v-else-if="imageStore.error" class="text-center">
+            <p class="text-accent mb-4">{{ imageStore.error }}</p>
+            <button type="button" class="ed-link" @click="imageStore.fetchImages()">重试</button>
+          </div>
+          <div v-else-if="drawnCards.length === 0" class="text-center">
             <p class="font-display text-3xl mb-2">尚未开印。</p>
             <p class="ed-meta">选择单抽或十连</p>
           </div>

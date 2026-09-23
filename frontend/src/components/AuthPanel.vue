@@ -1,10 +1,13 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useModalSession } from '@/composables/useModal'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import MaximalButton from '@/components/ui/MaximalButton.vue'
 
 const emit = defineEmits(['close', 'authenticated'])
+const root = ref(null)
+useModalSession(() => root.value, () => emit('close'))
 const auth = useAuthStore()
 const userData = useUserStore()
 const mode = ref('login')
@@ -34,17 +37,18 @@ async function submit() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-[100] bg-ink/40 flex items-center justify-center p-4" @click.self="emit('close')">
-    <section class="bg-paper border border-ink/20 w-full max-w-md p-7 md:p-10 shadow-2xl">
+  <div ref="root" class="fixed inset-0 z-[100] overflow-y-auto bg-ink/40" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <div class="flex min-h-full items-center justify-center p-4" @click.self="emit('close')">
+    <section class="bg-paper border border-ink/20 w-full max-w-md p-6 sm:p-7 md:p-10 shadow-2xl my-4" @click.stop>
       <div class="flex justify-between items-start mb-8">
         <div>
           <p class="ed-meta mb-2">Naiwa account</p>
-          <h2 class="font-display text-4xl">{{ mode === 'login' ? '欢迎回来。' : '加入奶蛙世界。' }}</h2>
+          <h2 id="auth-title" class="font-display text-4xl">{{ mode === 'login' ? '欢迎回来。' : '加入奶蛙世界。' }}</h2>
         </div>
         <button type="button" class="ed-meta hover:text-accent" @click="emit('close')">Close</button>
       </div>
       <form class="space-y-5" @submit.prevent="submit">
-        <p v-if="error" class="text-accent text-sm">{{ error }}</p>
+        <p v-if="error" class="text-accent text-sm" role="alert">{{ error }}</p>
         <label class="block">
           <span class="ed-meta">用户名{{ mode === 'login' ? ' / 邮箱' : '' }}</span>
           <input v-model.trim="form.username" class="ed-input" required minlength="3" maxlength="32" autocomplete="username" />
@@ -59,7 +63,8 @@ async function submit() {
         </label>
         <label class="block">
           <span class="ed-meta">密码</span>
-          <input v-model="form.password" class="ed-input" type="password" required minlength="8" autocomplete="current-password" />
+          <input v-model="form.password" class="ed-input" type="password" required minlength="8" aria-describedby="auth-password-hint" :autocomplete="mode === 'login' ? 'current-password' : 'new-password'" :aria-invalid="error ? 'true' : undefined" />
+          <span id="auth-password-hint" class="mt-2 block text-sm text-warm-gray">至少 8 个字符</span>
         </label>
         <label v-if="localCount && !auth.user?.local_data_imported" class="flex items-start gap-3 text-sm text-charcoal">
           <input v-model="mergeLocal" type="checkbox" class="mt-1" />
@@ -73,5 +78,6 @@ async function submit() {
         {{ mode === 'login' ? '没有账号？立即注册' : '已有账号？返回登录' }}
       </button>
     </section>
+    </div>
   </div>
 </template>

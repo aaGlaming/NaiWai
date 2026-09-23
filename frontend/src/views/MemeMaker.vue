@@ -99,36 +99,23 @@ onMounted(() => store.fetchImages())
 
     <section class="ed-page pb-24">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        <div class="lg:col-span-6">
-          <p class="ed-meta mb-6"><span class="ed-num">01</span> Edit</p>
-          <div class="space-y-6 mb-8">
-            <input v-model="topText" placeholder="顶部文字" class="ed-input" />
-            <input v-model="bottomText" placeholder="底部文字" class="ed-input" />
-            <label class="block ed-meta">字号 {{ fontSize }}
-              <input v-model.number="fontSize" type="range" min="24" max="96" class="w-full mt-2 accent-accent" />
-            </label>
-            <div class="flex gap-8">
-              <label class="ed-meta">文字 <input v-model="textColor" type="color" class="ml-2 align-middle" /></label>
-              <label class="ed-meta">描边 <input v-model="strokeColor" type="color" class="ml-2 align-middle" /></label>
-            </div>
-          </div>
-          <div class="bg-ink min-h-[280px] flex items-center justify-center overflow-hidden">
-            <canvas v-show="selected" ref="canvasRef" class="max-w-full max-h-[400px]" />
-            <p v-if="!selected" class="ed-meta text-paper p-8">先从右侧选一张图</p>
-          </div>
-          <div class="mt-8">
-            <MaximalButton :disabled="!selected" @click="downloadMeme">下载梗图</MaximalButton>
-          </div>
-        </div>
-
-        <div class="lg:col-span-6">
+        <div class="lg:col-span-6 lg:col-start-7">
           <p class="ed-meta mb-6"><span class="ed-num">02</span> Select</p>
-          <input v-model="pickerQuery" type="search" placeholder="搜索文件名…" class="ed-input mb-4" />
+          <label class="block mb-4">
+            <span class="ed-meta">搜索文件名</span>
+            <input v-model="pickerQuery" type="search" class="ed-input" />
+          </label>
           <label class="ed-meta block mb-4">
             或上传本地图片
             <input ref="fileInput" type="file" accept="image/*" class="mt-2 block" @change="onLocalFile" />
           </label>
           <p v-if="store.loading" class="ed-meta">加载中…</p>
+          <div v-else-if="store.error" class="py-8">
+            <p class="text-accent mb-4">{{ store.error }}</p>
+            <button type="button" class="ed-link" @click="store.fetchImages()">重试</button>
+            <p class="ed-meta mt-4">也可以上传本地图片。</p>
+          </div>
+          <p v-else-if="pickerImages.length === 0" class="ed-meta py-8">没有匹配的文件名。换一个词，或上传本地图片。</p>
           <div v-else class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[640px] overflow-y-auto">
             <button
               v-for="img in pickerImages"
@@ -142,6 +129,34 @@ onMounted(() => store.fetchImages())
             </button>
           </div>
           <p class="ed-meta mt-3">{{ pickerImages.length }} 张可选</p>
+        </div>
+
+        <div class="lg:col-span-6 lg:col-start-1 lg:row-start-1">
+          <p class="ed-meta mb-6"><span class="ed-num">01</span> Edit</p>
+          <div class="space-y-6 mb-8">
+            <label class="block">
+              <span class="ed-meta">顶部文字</span>
+              <input v-model="topText" class="ed-input" />
+            </label>
+            <label class="block">
+              <span class="ed-meta">底部文字</span>
+              <input v-model="bottomText" class="ed-input" />
+            </label>
+            <label class="block ed-meta">字号 {{ fontSize }}
+              <input v-model.number="fontSize" type="range" min="24" max="96" class="w-full mt-2 accent-accent" />
+            </label>
+            <div class="flex gap-8">
+              <label class="ed-meta">文字 <input v-model="textColor" type="color" class="ml-2 align-middle" /></label>
+              <label class="ed-meta">描边 <input v-model="strokeColor" type="color" class="ml-2 align-middle" /></label>
+            </div>
+          </div>
+          <div class="bg-ink min-h-[280px] flex items-center justify-center overflow-hidden">
+            <canvas v-show="selected" ref="canvasRef" class="max-w-full max-h-[400px]" />
+            <p v-if="!selected" class="ed-meta text-paper p-8">先选一张图</p>
+          </div>
+          <div class="mt-8">
+            <MaximalButton :disabled="!selected" @click="downloadMeme">下载梗图</MaximalButton>
+          </div>
         </div>
       </div>
     </section>

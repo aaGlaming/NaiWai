@@ -209,6 +209,10 @@ let lastTs = 0
 
 function loop(ts) {
   raf = requestAnimationFrame(loop)
+  if (document.hidden) {
+    lastTs = 0
+    return
+  }
   const current = run.value
   const ctx = canvasRef.value?.getContext('2d')
   if (!current || !ctx) return
@@ -241,12 +245,10 @@ onMounted(async () => {
   startRun()
   lastTs = 0
   raf = requestAnimationFrame(loop)
-  window.addEventListener('keydown', onKey)
 })
 
 onUnmounted(() => {
   cancelAnimationFrame(raf)
-  window.removeEventListener('keydown', onKey)
 })
 
 function switchMode(next) {
@@ -270,8 +272,8 @@ const records = computed(() => board.value.records || [])
 
     <section class="ed-page pb-4 flex flex-wrap gap-6 items-center">
       <div class="flex gap-6 ed-meta">
-        <button type="button" :class="mode === 'arcade' ? 'text-accent' : ''" @click="switchMode('arcade')">矿场</button>
-        <button type="button" :class="mode === 'daily' ? 'text-accent' : ''" @click="switchMode('daily')">今日矿洞</button>
+        <button type="button" :aria-pressed="mode === 'arcade'" :class="mode === 'arcade' ? 'text-accent' : ''" @click="switchMode('arcade')">矿场</button>
+        <button type="button" :aria-pressed="mode === 'daily'" :class="mode === 'daily' ? 'text-accent' : ''" @click="switchMode('daily')">今日矿洞</button>
       </div>
       <MaximalButton variant="ghost" size="sm" @click="startRun">重开</MaximalButton>
     </section>
@@ -288,13 +290,20 @@ const records = computed(() => board.value.records || [])
 
     <section class="ed-page pb-10 relative">
       <p v-if="store.loading" class="ed-meta py-16">Loading plates…</p>
+      <div v-else-if="store.error" class="py-16">
+        <p class="text-accent mb-4">{{ store.error }}</p>
+        <button type="button" class="ed-link" @click="store.fetchImages()">重试</button>
+      </div>
       <canvas
-        v-show="!store.loading"
+        v-show="!store.loading && !store.error"
         ref="canvasRef"
         :width="W"
         :height="H"
         class="w-full max-w-3xl border border-ink/15 bg-paper cursor-crosshair"
+        tabindex="0"
+        aria-label="矿场。点选矿场后，空格放钩，D 使用炸药。"
         @click="tryFire"
+        @keydown="onKey"
       ></canvas>
 
       <div v-if="phase === 'shop'" class="mt-8 max-w-xl border border-ink/15 p-6 bg-warm-white">
@@ -332,7 +341,7 @@ const records = computed(() => board.value.records || [])
         <MaximalButton @click="startRun">再打今日布局</MaximalButton>
       </div>
 
-      <p class="ed-meta mt-6">点击或空格放钩 · D 使用炸药</p>
+      <p class="ed-meta mt-6">点选矿场后，空格放钩 · D 使用炸药</p>
     </section>
 
     <section v-if="mode === 'daily'" class="ed-page pb-24">

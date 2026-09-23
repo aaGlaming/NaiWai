@@ -4,8 +4,19 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const visible = ref(loadVisible())
-const x = ref(typeof window !== 'undefined' ? window.innerWidth - 100 : 0)
-const y = ref(typeof window !== 'undefined' ? window.innerHeight - 160 : 0)
+function petHome() {
+  const w = window.innerWidth
+  const h = window.innerHeight
+  const narrow = w < 768
+  return {
+    x: Math.max(12, w - 76),
+    y: Math.max(88, h - (narrow ? 220 : 160))
+  }
+}
+
+const home = typeof window !== 'undefined' ? petHome() : { x: 0, y: 0 }
+const x = ref(home.x)
+const y = ref(home.y)
 const dragging = ref(false)
 const moved = ref(false)
 const offset = ref({ x: 0, y: 0 })
@@ -57,14 +68,25 @@ function openPetPage() {
   router.push('/pet')
 }
 
+function clampPet() {
+  const spot = petHome()
+  x.value = Math.min(Math.max(12, x.value), spot.x)
+  y.value = Math.min(Math.max(88, y.value), window.innerHeight - 64)
+}
+
 onMounted(() => {
+  const spot = petHome()
+  x.value = spot.x
+  y.value = spot.y
   window.addEventListener('pointermove', onPointerMove)
   window.addEventListener('pointerup', onPointerUp)
+  window.addEventListener('resize', clampPet)
 })
 
 onUnmounted(() => {
   window.removeEventListener('pointermove', onPointerMove)
   window.removeEventListener('pointerup', onPointerUp)
+  window.removeEventListener('resize', clampPet)
   clearTimeout(bubbleTimer)
 })
 
@@ -72,7 +94,7 @@ defineExpose({ toggleVisible })
 </script>
 
 <template>
-  <div v-if="visible" class="fixed z-[90] select-none touch-none" :style="{ left: `${x}px`, top: `${y}px` }">
+  <div v-if="visible" class="fixed z-30 select-none touch-none" :style="{ left: `${x}px`, top: `${y}px` }">
     <div
       v-if="bubble"
       class="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-1 bg-paper border border-ink/20 ed-meta text-ink"
@@ -92,7 +114,7 @@ defineExpose({ toggleVisible })
 
   <button
     v-if="!visible"
-    class="fixed bottom-6 right-6 z-[90] ed-meta px-3 py-2 border border-ink/20 bg-paper"
+    class="fixed right-4 z-30 ed-meta min-h-11 px-3 border border-ink/20 bg-paper bottom-[max(1rem,env(safe-area-inset-bottom))]"
     title="召唤奶蛙桌宠"
     @click="toggleVisible"
   >
@@ -100,7 +122,7 @@ defineExpose({ toggleVisible })
   </button>
   <button
     v-else
-    class="fixed bottom-6 right-6 z-[90] ed-meta px-3 py-2 border border-ink/20 bg-paper"
+    class="fixed right-4 z-30 ed-meta min-h-11 px-3 border border-ink/20 bg-paper bottom-[max(1rem,env(safe-area-inset-bottom))]"
     title="隐藏桌宠"
     @click="toggleVisible"
   >

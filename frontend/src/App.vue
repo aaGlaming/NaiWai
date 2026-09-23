@@ -12,9 +12,11 @@ import InstallHint from '@/components/InstallHint.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { useTheme } from '@/composables/useTheme'
+import { useModal } from '@/composables/useModal'
 
 const route = useRoute()
 const isMenuOpen = ref(false)
+const menuRef = ref(null)
 const showCardReveal = ref(!hasSeen('naiwa_card_reveal_seen'))
 const showPet = ref(!showCardReveal.value)
 const showAuth = ref(false)
@@ -73,6 +75,17 @@ const indexSections = [
   }
 ]
 
+const navSections = {
+  '/': ['/'],
+  '/gallery': ['/gallery', '/collection'],
+  '/lucky': ['/lucky', '/meme', '/wallpaper', '/tarot', '/quiz', '/play', '/mine', '/spread'],
+  '/about': ['/about', '/pet', '/changelog', '/contact']
+}
+
+function isNavCurrent(path) {
+  return (navSections[path] || [path]).includes(route.path)
+}
+
 function toggleMenu() {
   isMenuOpen.value = !isMenuOpen.value
 }
@@ -80,6 +93,8 @@ function toggleMenu() {
 function closeMenu() {
   isMenuOpen.value = false
 }
+
+useModal(isMenuOpen, menuRef, closeMenu, { header: false, trap: false })
 
 function onCardRevealClose() {
   showCardReveal.value = false
@@ -121,13 +136,14 @@ onMounted(async () => {
   }
   userData.offerMerge(localCount)
 })
+
 </script>
 
 <template>
   <div class="min-h-screen bg-paper text-ink">
-    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[200] bg-paper px-3 py-2">跳到正文</a>
-    <header class="fixed top-0 left-0 right-0 z-50 bg-paper/95 border-b border-ink/15">
-      <nav class="ed-page py-4 flex items-center justify-between gap-6">
+    <header id="site-header" class="fixed top-0 left-0 right-0 z-50 bg-paper border-b border-ink/15">
+      <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[200] bg-paper px-3 py-2">跳到正文</a>
+      <nav class="ed-page py-3 md:py-4 flex items-center justify-between gap-3 md:gap-6">
         <RouterLink to="/" class="font-display text-xl tracking-tight text-ink no-underline">
           NAIWA
         </RouterLink>
@@ -138,26 +154,32 @@ onMounted(async () => {
             :key="item.path"
             :to="item.path"
             class="ed-meta no-underline transition-colors duration-200"
-            :class="route.path === item.path ? 'text-accent' : 'text-ink hover:text-accent'"
+            :class="isNavCurrent(item.path) ? 'text-accent' : 'text-ink hover:text-accent'"
+            :aria-current="isNavCurrent(item.path) ? 'page' : undefined"
           >
             {{ item.label }}
           </RouterLink>
         </div>
 
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-1 sm:gap-6">
           <span class="ed-meta hidden sm:inline">{{ issueDate }}</span>
           <RouterLink v-if="auth.isAuthenticated" to="/profile" class="ed-meta ed-link">
             {{ auth.user.nickname }}
           </RouterLink>
-          <button v-else type="button" class="ed-meta text-ink hover:text-accent" @click="showAuth = true">
+          <button v-else type="button" class="ed-meta text-ink hover:text-accent px-2 min-h-11" @click="showAuth = true">
             登录
           </button>
-          <button type="button" class="ed-meta text-ink hover:text-accent" :aria-pressed="theme === 'ink'" @click="toggleTheme">
+          <button
+            type="button"
+            class="ed-meta text-ink hover:text-accent px-2 min-h-11"
+            :aria-label="theme === 'ink' ? '切换到纸色' : '切换到墨色'"
+            @click="toggleTheme"
+          >
             {{ theme === 'ink' ? '纸色' : '墨色' }}
           </button>
           <button
             type="button"
-            class="ed-meta text-ink hover:text-accent"
+            class="ed-meta text-ink hover:text-accent px-2 min-h-11"
             :aria-expanded="isMenuOpen"
             aria-controls="site-index"
             @click="toggleMenu"
@@ -172,7 +194,11 @@ onMounted(async () => {
       <div
         v-if="isMenuOpen"
         id="site-index"
-        class="fixed inset-0 z-[80] bg-paper overflow-y-auto pt-24 pb-16"
+        ref="menuRef"
+        role="dialog"
+        aria-modal="true"
+        aria-label="目录"
+        class="fixed inset-0 z-40 bg-paper overflow-y-auto pt-24 pb-16"
       >
         <div class="ed-page">
           <p class="ed-meta mb-10">Issue 04 — Contents</p>
@@ -197,14 +223,8 @@ onMounted(async () => {
       </div>
     </Teleport>
 
+    <div id="page-content">
     <CardReveal v-if="showCardReveal" @close="onCardRevealClose" />
-    <AuthPanel v-if="showAuth" @close="showAuth = false" />
-    <MergeDataDialog
-      v-if="userData.pendingMerge"
-      :count="userData.pendingMerge.count"
-      @confirm="confirmMerge"
-      @skip="skipMerge"
-    />
     <AchievementToast />
     <DesktopPet v-if="showPet" />
     <InstallHint />
@@ -235,5 +255,14 @@ onMounted(async () => {
         </p>
       </div>
     </footer>
+    </div>
+
+    <AuthPanel v-if="showAuth" @close="showAuth = false" />
+    <MergeDataDialog
+      v-if="userData.pendingMerge"
+      :count="userData.pendingMerge.count"
+      @confirm="confirmMerge"
+      @skip="skipMerge"
+    />
   </div>
 </template>
